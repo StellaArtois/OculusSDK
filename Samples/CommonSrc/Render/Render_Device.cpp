@@ -33,7 +33,7 @@ namespace OVR { namespace Render {
     {
         if(Visible)
         {
-            AutoGpuProf prof(ren, "Model_Render");
+            AutoGpuProf prof(ren, (AssetName.GetLength() > 0 ? AssetName.ToCStr() : "Model_Render"));
             Matrix4f m = ltw * GetMatrix();
             ren->Render(m, this);
         }
@@ -523,6 +523,10 @@ namespace OVR { namespace Render {
         pDistortionComputePinBuffer[0].Clear();
         pDistortionComputePinBuffer[1].Clear();
         LightingBuffer.Clear();
+
+        DeleteFills();
+
+        Hmd = nullptr;
     }
 
     Fill* RenderDevice::CreateTextureFill(Render::Texture* t, bool useAlpha, bool usePremult)

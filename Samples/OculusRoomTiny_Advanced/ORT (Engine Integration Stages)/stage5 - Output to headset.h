@@ -10,26 +10,29 @@
                                      {                                                                                                    \
                                          ovrSwapTextureSet      * TextureSet;                                                             \
                                          ID3D11RenderTargetView * TexRtv[3];                                                              \
-                                         OculusTexture(ovrHmd hmd, Sizei size)                                                            \
+										 OculusTexture(ovrHmd hmd, int sizeW, int sizeH)                                                  \
                                          {                                                                                                \
                                              D3D11_TEXTURE2D_DESC dsDesc;                                                                 \
-                                             dsDesc.Width = size.w;                                                                       \
-                                             dsDesc.Height = size.h;                                                                      \
+                                             dsDesc.Width = sizeW;                                                                        \
+                                             dsDesc.Height = sizeH;                                                                       \
                                              dsDesc.MipLevels = 1;                                                                        \
                                              dsDesc.ArraySize = 1;                                                                        \
-                                             dsDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;                                                  \
+                                             dsDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;                                             \
                                              dsDesc.SampleDesc.Count = 1;                                                                 \
                                              dsDesc.SampleDesc.Quality = 0;                                                               \
                                              dsDesc.Usage = D3D11_USAGE_DEFAULT;                                                          \
                                              dsDesc.CPUAccessFlags = 0;                                                                   \
                                              dsDesc.MiscFlags = 0;                                                                        \
                                              dsDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;                    \
-                                             ovrHmd_CreateSwapTextureSetD3D11(hmd, DIRECTX.Device, &dsDesc, &TextureSet);                 \
+											 ovr_CreateSwapTextureSetD3D11(hmd, DIRECTX.Device, &dsDesc, ovrSwapTextureSetD3D11_Typeless, &TextureSet);              \
                                              for (int i = 0; i < TextureSet->TextureCount; ++i)                                           \
                                              {                                                                                            \
-                                                 ovrD3D11Texture* tex = (ovrD3D11Texture*)&TextureSet->Textures[i];                       \
-                                                 DIRECTX.Device->CreateRenderTargetView(tex->D3D11.pTexture, NULL, &TexRtv[i]);           \
-                                             }                                                                                            \
+											     ovrD3D11Texture* tex = (ovrD3D11Texture*)&TextureSet->Textures[i];						  \
+												 D3D11_RENDER_TARGET_VIEW_DESC rtvd = {};												  \
+												 rtvd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;												  \
+												 rtvd.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;									  \
+												 DIRECTX.Device->CreateRenderTargetView(tex->D3D11.pTexture, &rtvd, &TexRtv[i]);		  \
+											 }                                                                                            \
                                          }                                                                                                \
                                          void Increment()                                                                                 \
                                          {                                                                                                \
@@ -37,7 +40,7 @@
                                          }                                                                                                \
                                          void Release(ovrHmd hmd)                                                                         \
                                          {                                                                                                \
-                                             ovrHmd_DestroySwapTextureSet(hmd, TextureSet);                                               \
+                                             ovr_DestroySwapTextureSet(hmd, TextureSet);                                               \
                                          }                                                                                                \
                                      };
 
@@ -48,18 +51,20 @@
                                      ovrRecti         eyeRenderViewport[2];                                                                \
                                      for (int eye = 0; eye < 2; eye++)                                                                     \
                                      {                                                                                                     \
-                                         Sizei idealSize = ovrHmd_GetFovTextureSize(HMD, (ovrEyeType)eye, HMD->DefaultEyeFov[eye], 1.0f);  \
-                                         pEyeRenderTexture[eye] = new OculusTexture(HMD, idealSize);                                       \
-                                         pEyeDepthBuffer[eye] = new DepthBuffer(DIRECTX.Device, idealSize);                                \
-                                         eyeRenderViewport[eye].Pos = Vector2i(0, 0);                                                      \
-                                         eyeRenderViewport[eye].Size = idealSize;                                                          \
+                                         ovrSizei idealSize = ovr_GetFovTextureSize(HMD, (ovrEyeType)eye, HMDInfo.DefaultEyeFov[eye], 1.0f);  \
+                                         pEyeRenderTexture[eye] = new OculusTexture(HMD, idealSize.w, idealSize.h);                        \
+                                         pEyeDepthBuffer[eye] = new DepthBuffer(DIRECTX.Device, idealSize.w, idealSize.h);                 \
+										 eyeRenderViewport[eye].Pos.x = 0;                                                                 \
+										 eyeRenderViewport[eye].Pos.y = 0;                                                                 \
+										 eyeRenderViewport[eye].Size = idealSize;                                                          \
                                      }
 
 
 #define STAGE5_SetEyeRenderTarget    pEyeRenderTexture[eye]->Increment();                                                                  \
                                      int texIndex = pEyeRenderTexture[eye]->TextureSet->CurrentIndex;                                      \
                                      DIRECTX.SetAndClearRenderTarget(pEyeRenderTexture[eye]->TexRtv[texIndex], pEyeDepthBuffer[eye]);      \
-                                     DIRECTX.SetViewport(Recti(eyeRenderViewport[eye]));
+									 DIRECTX.SetViewport((float)eyeRenderViewport[eye].Pos.x, (float)eyeRenderViewport[eye].Pos.y,         \
+									                     (float)eyeRenderViewport[eye].Size.w, (float)eyeRenderViewport[eye].Size.h);
 
 #define STAGE5_DistortAndPresent     ovrViewScaleDesc viewScaleDesc;                                                                       \
                                      viewScaleDesc.HmdSpaceToWorldScaleInMeters = 1.0f;                                                    \
@@ -72,11 +77,11 @@
                                      {                                                                                                     \
                                          ld.ColorTexture[eye] = pEyeRenderTexture[eye]->TextureSet;                                        \
                                          ld.Viewport[eye] = eyeRenderViewport[eye];                                                        \
-                                         ld.Fov[eye] = HMD->DefaultEyeFov[eye];                                                            \
+                                         ld.Fov[eye] = HMDInfo.DefaultEyeFov[eye];                                                         \
                                          ld.RenderPose[eye] = EyeRenderPose[eye];                                                          \
                                      }                                                                                                     \
                                      ovrLayerHeader* layers = &ld.Header;                                                                  \
-                                     isVisible = ovrHmd_SubmitFrame(HMD, 0, &viewScaleDesc, &layers, 1) == ovrSuccess;                                           
+                                     isVisible = ovr_SubmitFrame(HMD, 0, &viewScaleDesc, &layers, 1) == ovrSuccess;                                           
                                                                                                                                        
 #define STAGE5_ReleaseOculusTextures pEyeRenderTexture[0]->Release(HMD);                                                                   \
                                      pEyeRenderTexture[1]->Release(HMD);                                                               
@@ -87,8 +92,8 @@
 //============
 {
     STAGE5_DeclareOculusTexture         /*NEW*/
-    STAGE1_InitEngine;
     STAGE2_InitSDK
+    STAGE1_InitEngine(L"Stage5", &luid);
     STAGE5_CreateEyeBuffers            /*REPLACEMENT*/
     STAGE4_ConfigureVR
     STAGE1_InitModelsAndCamera

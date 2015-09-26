@@ -116,8 +116,7 @@
       <AdditionalDependencies>$(OVRSDKROOT)LibOVRKernel/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVRKernel.lib;$(OVRSDKROOT)LibOVR/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVR.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent Condition="'$(Platform)'=='Win32'">
-      <Command>
-      </Command>
+      <Command>xcopy /S /Y /I "$(ProjectDir)..\..\..\Assets" "$(TargetDir)Assets" &amp; xcopy /Y "$(ProjectDir)..\..\..\..\..\3rdParty\Windows Kits\8.1\Redist\D3D\x86\d3dcompiler_47.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>
@@ -152,8 +151,7 @@
       <AdditionalDependencies>$(OVRSDKROOT)LibOVRKernel/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVRKernel.lib;$(OVRSDKROOT)LibOVR/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVR.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>xcopy /S /Y /I "$(ProjectDir)..\..\..\Assets" "$(TargetDir)Assets" &amp; xcopy /Y "$(ProjectDir)..\..\..\..\..\3rdParty\Windows Kits\8.1\Redist\D3D\x64\d3dcompiler_47.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDPIAwareness>PerMonitorHighDPIAware</EnableDPIAwareness>
@@ -186,8 +184,7 @@
       <AdditionalDependencies>$(OVRSDKROOT)LibOVRKernel/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVRKernel.lib;$(OVRSDKROOT)LibOVR/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVR.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>xcopy /S /Y /I "$(ProjectDir)..\..\..\Assets" "$(TargetDir)Assets" &amp; xcopy /Y "$(ProjectDir)..\..\..\..\..\3rdParty\Windows Kits\8.1\Redist\D3D\x86\d3dcompiler_47.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDPIAwareness>PerMonitorHighDPIAware</EnableDPIAwareness>
@@ -221,8 +218,7 @@
       <AdditionalDependencies>$(OVRSDKROOT)LibOVRKernel/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVRKernel.lib;$(OVRSDKROOT)LibOVR/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVR.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>xcopy /S /Y /I "$(ProjectDir)..\..\..\Assets" "$(TargetDir)Assets" &amp; xcopy /Y "$(ProjectDir)..\..\..\..\..\3rdParty\Windows Kits\8.1\Redist\D3D\x64\d3dcompiler_47.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDPIAwareness>PerMonitorHighDPIAware</EnableDPIAwareness>

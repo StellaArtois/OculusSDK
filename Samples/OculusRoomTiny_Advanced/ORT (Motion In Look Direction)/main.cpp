@@ -23,20 +23,8 @@ limitations under the License.
 /// as exhibited in most of these samples.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
-
-//----------------------------------------------------------------
-void GetUnitHorizForwardAndRightVectors(Quatf riftOrientation, Matrix4f userOrientation,
-                                   Vector3f * pUnitForwardVector, Vector3f * pUnitRightVector)
-{
-    Vector3f eulerFromRift;
-    riftOrientation.GetEulerAngles<Axis_X, Axis_Y, Axis_Z>(&eulerFromRift.x, &eulerFromRift.y, &eulerFromRift.z);
-    Matrix4f totalHorizRot = userOrientation * Matrix4f::RotationY(eulerFromRift.y);
-    *pUnitForwardVector = totalHorizRot.Transform(Vector3f(0,0,-1));
-    *pUnitRightVector   = totalHorizRot.Transform(Vector3f(1,0,0));
-}
-
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -54,20 +42,20 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         basicVR.Layer[0]->GetEyePoses();
 
         // Find the orthogonal vectors resulting from combined rift and user yaw
-        Vector3f unitForwardVector, unitRightVector;
-        GetUnitHorizForwardAndRightVectors(basicVR.Layer[0]->EyeRenderPose[0].Orientation, basicVR.MainCam->Rot,
-                                      &unitForwardVector, &unitRightVector);
+ 		XMVECTOR totalRot = XMQuaternionMultiply(ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Orientation), basicVR.MainCam.Rot);
+		XMVECTOR forward = XMVector3Rotate(XMVectorSet(0, 0, -1, 0), totalRot);
+		XMVECTOR right   = XMVector3Rotate(XMVectorSet(1, 0, 0, 0), totalRot);
 
         // Keyboard inputs to adjust player position, using these orthogonal vectors
         float speed = 0.05f;
-        if (DIRECTX.Key['W']||DIRECTX.Key[VK_UP])   basicVR.MainCam->Pos+=unitForwardVector*speed;
-        if (DIRECTX.Key['S']||DIRECTX.Key[VK_DOWN]) basicVR.MainCam->Pos-=unitForwardVector*speed;
-        if (DIRECTX.Key['D'])                       basicVR.MainCam->Pos+=unitRightVector*speed;
-        if (DIRECTX.Key['A'])                       basicVR.MainCam->Pos-=unitRightVector*speed;
+		if (DIRECTX.Key['W'] || DIRECTX.Key[VK_UP])   basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVectorScale(forward,+speed));
+		if (DIRECTX.Key['S'] || DIRECTX.Key[VK_DOWN]) basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVectorScale(forward,-speed));
+		if (DIRECTX.Key['D'])                         basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVectorScale(right, +speed));
+		if (DIRECTX.Key['A'])                         basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVectorScale(right, -speed));
 
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

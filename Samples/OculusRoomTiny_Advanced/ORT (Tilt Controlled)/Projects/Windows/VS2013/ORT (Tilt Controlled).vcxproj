@@ -25,7 +25,7 @@
     <ProjectGuid>{0B91311A-4274-4043-A92D-A0395475ED76}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Tilt Controlled)</ProjectName>
+    <ProjectName>Tilt Controlled</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -24,49 +24,64 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"  // Basic VR
 
+struct MSAA : BasicVR
+{
+    MSAA(HINSTANCE hinst) : BasicVR(hinst, L"MSAA") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+        // Make MSAA textures and depth buffers
+        static const int sampleCount = 4;
+        Texture     * MSAATexture[2];
+	    DepthBuffer * MSAADepthBuffer[2];
+        for (int eye = 0; eye < 2; ++eye)
+	    {
+		    MSAATexture[eye] = new Texture(true, Layer[0]->pEyeRenderTexture[eye]->SizeW,
+			                                     Layer[0]->pEyeRenderTexture[eye]->SizeH, 0, sampleCount);
+		    MSAADepthBuffer[eye] = new DepthBuffer(DIRECTX.Device, Layer[0]->pEyeRenderTexture[eye]->SizeW,
+			                                                       Layer[0]->pEyeRenderTexture[eye]->SizeH, sampleCount);
+	    }
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    Layer[0]->GetEyePoses();
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+                if (DIRECTX.Key['1'])
+                {
+                    // Without MSAA, for comparison
+                    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+                }
+                else
+                {
+                    // Render to higher resolution texture
+                    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, MSAATexture[eye]->TexRtv, 0, 1, 1, 1, 1, 1, 0.2f, 1000.0f, true, MSAADepthBuffer[eye]);
+                    // Then resolve down into smaller buffer
+                    int destIndex = Layer[0]->pEyeRenderTexture[eye]->TextureSet->CurrentIndex;
+                    auto dstTex = reinterpret_cast<ovrD3D11Texture*>(&(Layer[0]->pEyeRenderTexture[eye]->TextureSet->Textures[destIndex]))->D3D11.pTexture;
+                    DIRECTX.Context->ResolveSubresource(dstTex, 0, MSAATexture[eye]->Tex, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
+                }
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+
+        for (int eye = 0; eye < 2; ++eye)
+	    {
+		    delete MSAATexture[eye];
+		    delete MSAADepthBuffer[eye];
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Make MSAA textures and depth buffers
-    int sampleCount = 4;
-    Texture  * MSAATexture[2];
-    MSAATexture[0] = new Texture(true, basicVR.Layer[0]->pEyeRenderTexture[0]->Size, 0, sampleCount);
-    MSAATexture[1] = new Texture(true, basicVR.Layer[0]->pEyeRenderTexture[1]->Size, 0, sampleCount);
-    DepthBuffer * MSAADepthBuffer[2];
-    MSAADepthBuffer[0] = new DepthBuffer(DIRECTX.Device, basicVR.Layer[0]->pEyeRenderTexture[0]->Size, sampleCount);
-    MSAADepthBuffer[1] = new DepthBuffer(DIRECTX.Device, basicVR.Layer[0]->pEyeRenderTexture[1]->Size, sampleCount);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        basicVR.Layer[0]->GetEyePoses();
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            if (DIRECTX.Key['1'])
-            {
-                // Without MSAA, for comparison
-                basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-            }
-            else
-            {
-                // Render to higher resolution texture
-                basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye, MSAATexture[eye]->TexRtv, 0, 1, 1, 1, 1, 1, 0.2f, 1000.0f, true,
-                                                    MSAADepthBuffer[eye]);
-                // Then resolve down into smaller buffer
-                int destIndex = basicVR.Layer[0]->pEyeRenderTexture[eye]->TextureSet->CurrentIndex;
-                ID3D11Texture2D* dstTex = ((ovrD3D11Texture*)&(basicVR.Layer[0]->pEyeRenderTexture[eye]->TextureSet->Textures[destIndex]))->D3D11.pTexture;
-                DIRECTX.Context->ResolveSubresource(dstTex, 0, MSAATexture[eye]->Tex, 0, DXGI_FORMAT_B8G8R8A8_UNORM);
-            }
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	MSAA app(hinst);
+    return app.Run();
 }

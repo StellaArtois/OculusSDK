@@ -28,32 +28,38 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"  // Basic VR
 
+struct RecenterPose : BasicVR
+{
+    RecenterPose(HINSTANCE hinst) : BasicVR(hinst, L"Recenter Pose") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+
+            // Recenter the Rift by pressing '1'
+            if (DIRECTX.Key['1'])
+                ovr_RecenterPose(HMD);
+
+		    Layer[0]->GetEyePoses();
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        // Recenter the Rift by pressing '1'
-        if (DIRECTX.Key['1'])
-            ovrHmd_RecenterPose(basicVR.HMD);
-
-
-        basicVR.Layer[0]->GetEyePoses();
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	RecenterPose app(hinst);
+    return app.Run();
 }

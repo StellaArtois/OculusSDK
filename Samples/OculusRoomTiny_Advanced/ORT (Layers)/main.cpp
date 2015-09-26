@@ -31,50 +31,57 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"        // Basic VR
 
+struct Layers : BasicVR
+{
+    Layers(HINSTANCE hinst) : BasicVR(hinst, L"Layers") {}
+
+    void MainLoop()
+    {
+        // Create a small FOV
+        ovrFovPort newFOV[2];
+        newFOV[0].DownTan = newFOV[0].UpTan = newFOV[0].LeftTan = newFOV[0].RightTan = 0.5f;
+        newFOV[1] = newFOV[0];
+
+        // Make layers, with 2nd one having smaller FOV, and the first having lower resolution
+        Layer[0] = new VRLayer(HMD, 0, 0.33f);
+        Layer[1] = new VRLayer(HMD, newFOV);
+
+        // Main loop
+        while (HandleMessages())
+        {
+            // Lets use a clock, and user input, to decide when each layer is updated
+            static int clock = 0;
+            ++clock;
+            bool updateLayer0 = true;
+            bool updateLayer1 = true;
+            if ((DIRECTX.Key['2']) && ((clock % 4) != 0)) updateLayer0 = false;
+            if (DIRECTX.Key['3']) updateLayer0 = false;
+            if (DIRECTX.Key['4']) updateLayer1 = false;
+
+            ActionFromInput();
+
+            if (updateLayer0) Layer[0]->GetEyePoses();
+            if (updateLayer1) Layer[1]->GetEyePoses();
+
+            for (int eye = 0; eye < 2; ++eye)
+            {
+                if (updateLayer0) Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 1, 0.8f, 1);
+                if (updateLayer1) Layer[1]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 1, 1, 1);
+            }
+
+            Layer[0]->PrepareLayerHeader();
+            Layer[1]->PrepareLayerHeader();
+        
+            // Press 1 to show just one layer
+            if (DIRECTX.Key['1']) DistortAndPresent(1);
+            else                  DistortAndPresent(2);
+        }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-
-    // Create a small FOV
-    ovrFovPort newFOV[2];
-    newFOV[0].DownTan = newFOV[0].UpTan = newFOV[0].LeftTan = newFOV[0].RightTan = 0.5f;
-    newFOV[1] = newFOV[0];
-
-    // Make layers, with 2nd one having smaller FOV, and the first having lower resolution
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD, 0 ,0.33f);
-    basicVR.Layer[1] = new VRLayer(basicVR.HMD, newFOV);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        // Lets use a clock, and user input, to decide when each layer is updated
-        static int clock = 0;
-        clock++;
-        bool updateLayer0 = true;
-        bool updateLayer1 = true;
-        if ((DIRECTX.Key['2']) && ((clock % 4) != 0)) updateLayer0 = false;
-        if (DIRECTX.Key['3']) updateLayer0 = false;
-        if (DIRECTX.Key['4']) updateLayer1 = false;
-
-        basicVR.ActionFromInput();
-
-        if (updateLayer0) basicVR.Layer[0]->GetEyePoses();
-        if (updateLayer1) basicVR.Layer[1]->GetEyePoses();
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            if (updateLayer0) basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye, 0, 0, 1, 1, 1, 0.8f, 1);
-            if (updateLayer1) basicVR.Layer[1]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye, 0, 0, 1, 1, 1, 1, 1);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.Layer[1]->PrepareLayerHeader();
-        
-        // Press 1 to show just one layer
-        if (DIRECTX.Key['1']) basicVR.DistortAndPresent(1);
-        else                  basicVR.DistortAndPresent(2);
-    }
-
-    return (basicVR.Release(hinst));
+	Layers app(hinst);
+    return app.Run();
 }

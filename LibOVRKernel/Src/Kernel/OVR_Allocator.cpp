@@ -42,6 +42,12 @@ limitations under the License.
  #include <sys/mman.h>
 #endif
 
+#if defined(OVR_CC_MSVC) && (_MSC_VER >= 1800)
+ OVR_DISABLE_ALL_MSVC_WARNINGS()
+ #include <thread>
+ OVR_RESTORE_ALL_MSVC_WARNINGS()
+#endif
+
 // This will cause an assertion to trip whenever an allocation occurs outside of our
 // custom allocator.  This helps track down allocations that are not being done
 // correctly via OVR_ALLOC().
@@ -53,7 +59,32 @@ namespace OVR {
 //-----------------------------------------------------------------------------------
 // ***** Allocator
 
-Allocator* Allocator::pInstance = 0;
+Allocator* Allocator::GetInstance()
+{
+    static Allocator* pAllocator = nullptr;
+
+    if(!pAllocator)
+    {
+        static DefaultAllocator defaultAllocator;
+        pAllocator = &defaultAllocator;
+
+        #if defined(OVR_BUILD_DEBUG)
+            static DebugPageAllocator debugAllocator;
+
+            // Make _CrtIsValidHeapPointer always return true. The VC++ concurrency library has a bug in that 
+            // it's calling _CrtIsValidHeapPointer, which is invalid and recommended against by Microsoft themselves.
+            // We need to deal with this nevertheless. The problem is that the VC++ concurrency library is 
+            // calling _CrtIsValidHeapPointer on the default heap instead of the current heap (DebugPageAllocator).
+            // So we modify the _CrtIsValidHeapPointer implementation to always return true. The primary risk 
+            // with this change is that there's some code somewhere that uses it for a non-diagnostic purpose. 
+            // However this os Oculus-debug-internal and so has no effect on any formally published software.
+            if(OVR::KillCdeclFunction(_CrtIsValidHeapPointer, TRUE)) // If we can successfully kill _CrtIsValidHeapPointer, use our debug allocator.
+                pAllocator = &debugAllocator;
+        #endif
+    }
+
+    return pAllocator;
+}
 
 // Default AlignedAlloc implementation will delegate to Alloc/Free after doing rounding.
 void* Allocator::AllocAligned(size_t size, size_t align)
@@ -70,14 +101,13 @@ void* Allocator::AllocAligned(size_t size, size_t align)
         *(((size_t*)aligned)-1) = aligned-p;
     }
 
-    trackAlloc((void*)aligned, size);
-
-    return (void*)aligned;
+    return (void*)(aligned);
 }
 
 void Allocator::FreeAligned(void* p)
 {
-    untrackAlloc((void*)p);
+    if (!p)
+        return;
 
     size_t src = size_t(p) - *(((size_t*)p) - 1);
     Free((void*)src);
@@ -96,13 +126,14 @@ void* DefaultAllocator::Alloc(size_t size)
     trackAlloc(p, size);
     return p;
 }
+
 void* DefaultAllocator::AllocDebug(size_t size, const char* file, unsigned line)
 {
-	OVR_UNUSED2(file, line); // should be here for debugopt config
     void* p;
 #if defined(OVR_CC_MSVC) && defined(_CRTDBG_MAP_ALLOC)
     p = _malloc_dbg(size, _NORMAL_BLOCK, file, line);
 #else
+    OVR_UNUSED2(file, line); // should be here for debugopt config
     p = malloc(size);
 #endif
     trackAlloc(p, size);
@@ -114,11 +145,11 @@ void* DefaultAllocator::Realloc(void* p, size_t newSize)
     void* newP = realloc(p, newSize);
 
     // This used to more efficiently check if (newp != p) but static analyzers were erroneously flagging this.
-    if(newP) // Need to check newP because realloc doesn't free p unless it returns a valid newP.
+    if (newP) // Need to check newP because realloc doesn't free p unless it returns a valid newP.
     {
-        #if !defined(__clang_analyzer__)  // The analyzer complains that we are using p after it was freed.
-            untrackAlloc(p);
-        #endif
+#if !defined(__clang_analyzer__)  // The analyzer complains that we are using p after it was freed.
+        untrackAlloc(p);
+#endif
     }
     trackAlloc(newP, newSize);
     return newP;
@@ -165,20 +196,8 @@ void SafeMMapFree(const void* memory, size_t size)
 
 
 //------------------------------------------------------------------------
-// ***** Track Allocations
+// ***** SetLeakTracking
 
-struct TrackedAlloc
-{
-    TrackedAlloc* pNext;
-    TrackedAlloc* pPrev;
-    void*         pAlloc;
-    void*         Callstack[64];
-    uint32_t      FrameCount;
-    uint32_t      Size;
-};
-
-static TrackedAlloc* TrackHead = nullptr;
-static SymbolLookup Symbols;
 static bool IsLeakTracking = false;
 
 void Allocator::SetLeakTracking(bool enabled)
@@ -190,6 +209,25 @@ void Allocator::SetLeakTracking(bool enabled)
     enabled = false;
 #endif
 
+    if (enabled)
+    {
+#if defined(OVR_CC_MSVC) && (_MSC_VER >= 1800)
+        // Initialize standard threads before allocator is created.  Microsoft's
+        // standard threads implementation uses static memory to store heap
+        // allocations that are not released until the end of process execution.
+        // This code is necessary to initialize this memory at the outset and get
+        // rid of false positives in the memory leak detection code.
+        {
+            std::thread th = std::thread([](){});
+            std::thread test([](){});
+            test.join();
+            th.join();
+        }
+#endif
+
+        SymbolLookup::Initialize();
+    }
+
     IsLeakTracking = enabled;
 }
 
@@ -198,30 +236,77 @@ bool Allocator::IsTrackingLeaks()
     return IsLeakTracking;
 }
 
+
+//------------------------------------------------------------------------
+// ***** Track Allocations
+
+struct TrackedAlloc
+{
+    TrackedAlloc* pNext;
+    TrackedAlloc* pPrev;
+
+    void*         pAlloc;
+    void*         Callstack[64];
+    uint32_t      FrameCount;
+    uint32_t      Size;
+};
+
+static uint32_t PointerHash(const void* p)
+{
+    uintptr_t key = (uintptr_t)p;
+#ifdef OVR_64BIT_POINTERS
+    key = (~key) + (key << 18);
+    key = key ^ (key >> 31);
+    key = key * 21;
+    key = key ^ (key >> 11);
+    key = key + (key << 6);
+    key = key ^ (key >> 22);
+#else
+    key = (key ^ 61) ^ (key >> 16);
+    key = key + (key << 3);
+    key = key ^ (key >> 4);
+    key = key * 0x27d4eb2d;
+    key = key ^ (key >> 15);
+#endif
+    return (uint32_t)key;
+}
+
+#define OVR_HASH_BITS 10
+#define OVR_HASH_SIZE (1 << OVR_HASH_BITS)
+#define OVR_HASH_MASK (OVR_HASH_SIZE - 1)
+
+static TrackedAlloc* AllocHashMap[OVR_HASH_SIZE] = {nullptr};
+static SymbolLookup Symbols;
+
 void Allocator::trackAlloc(void* p, size_t size)
 {
     if (!p || !IsLeakTracking)
         return;
 
-    Lock::Locker locker(&TrackLock);
-
     TrackedAlloc* tracked = (TrackedAlloc*)malloc(sizeof(TrackedAlloc));
-    if (tracked)
+    tracked->pAlloc = p;
+    tracked->FrameCount = (uint32_t)Symbols.GetBacktrace(tracked->Callstack, OVR_ARRAY_COUNT(tracked->Callstack), 2);
+    tracked->Size = (uint32_t)size;
+
+    uint32_t key = PointerHash(p) & OVR_HASH_MASK;
+
+    // Hold track lock and verify leak tracking is still going on
+    Lock::Locker locker(&TrackLock);
+    if (!IsLeakTracking)
     {
-        memset(tracked, 0, sizeof(TrackedAlloc));
-
-        tracked->pAlloc = p;
-        tracked->pPrev = nullptr;
-        tracked->FrameCount = (uint32_t)Symbols.GetBacktrace(tracked->Callstack, OVR_ARRAY_COUNT(tracked->Callstack), 2);
-        tracked->Size = (uint32_t)size;
-
-        tracked->pNext = TrackHead;
-        if (TrackHead)
-        {
-            TrackHead->pPrev = tracked;
-        }
-        TrackHead = tracked;
+        free(tracked);
+        return;
     }
+
+    // Insert into the hash map
+    TrackedAlloc* head = AllocHashMap[key];
+    tracked->pPrev = nullptr;
+    tracked->pNext = head;
+    if (head)
+    {
+        head->pPrev = tracked;
+    }
+    AllocHashMap[key] = tracked;
 }
 
 void Allocator::untrackAlloc(void* p)
@@ -229,9 +314,13 @@ void Allocator::untrackAlloc(void* p)
     if (!p || !IsLeakTracking)
         return;
 
+    uint32_t key = PointerHash(p) & OVR_HASH_MASK;
+
     Lock::Locker locker(&TrackLock);
 
-    for (TrackedAlloc* t = TrackHead; t; t = t->pNext)
+    TrackedAlloc* head = AllocHashMap[key];
+
+    for (TrackedAlloc* t = head; t; t = t->pNext)
     {
         if (t->pAlloc == p)
         {
@@ -243,9 +332,9 @@ void Allocator::untrackAlloc(void* p)
             {
                 t->pNext->pPrev = t->pPrev;
             }
-            if (TrackHead == t)
+            if (head == t)
             {
-                TrackHead = t->pNext;
+                AllocHashMap[key] = t->pNext;
             }
             free(t);
 
@@ -254,7 +343,7 @@ void Allocator::untrackAlloc(void* p)
     }
 }
 
-int DumpMemory()
+int Allocator::DumpMemory()
 {
     const bool symbolLookupWasInitialized = SymbolLookup::IsInitialized();
     const bool symbolLookupAvailable = SymbolLookup::Initialize();
@@ -273,28 +362,33 @@ int DumpMemory()
 
     int leakCount = 0;
 
-    for (TrackedAlloc* t = TrackHead; t; t = t->pNext)
+    for (int i = 0; i < OVR_HASH_SIZE; ++i)
     {
-        LogError("[Leak] ** Detected leaked allocation at %p (size = %u) (%d frames)", t->pAlloc, (unsigned)t->Size, (unsigned)t->FrameCount);
-
-        for (size_t i = 0; i < t->FrameCount; ++i)
+        for (TrackedAlloc* t = AllocHashMap[i]; t; t = t->pNext)
         {
-            SymbolInfo symbolInfo;
+            LogError("[Leak] ** Detected leaked allocation at %p (size = %u) (%d frames)", t->pAlloc, (unsigned)t->Size, (unsigned)t->FrameCount);
 
-            if (symbolLookupAvailable && Symbols.LookupSymbol((uint64_t)t->Callstack[i], symbolInfo) && (symbolInfo.filePath[0] || symbolInfo.function[0]))
+            for (size_t i = 0; i < t->FrameCount; ++i)
             {
-                if(symbolInfo.filePath[0])
-                    LogText("%s(%d): %s\n", symbolInfo.filePath, symbolInfo.fileLineNumber, symbolInfo.function[0] ? symbolInfo.function : "(unknown function)");
+                SymbolInfo symbolInfo;
+
+                if (symbolLookupAvailable && Symbols.LookupSymbol((uint64_t)t->Callstack[i], symbolInfo) && (symbolInfo.filePath[0] || symbolInfo.function[0]))
+                {
+                    if (symbolInfo.filePath[0])
+                        LogText("%s(%d): %s\n", symbolInfo.filePath, symbolInfo.fileLineNumber, symbolInfo.function[0] ? symbolInfo.function : "(unknown function)");
+                    else
+                        LogText("%p (unknown source file): %s\n", t->Callstack[i], symbolInfo.function);
+                }
                 else
-                    LogText("%p (unknown source file): %s\n", t->Callstack[i], symbolInfo.function);
+                {
+                    LogText("%p (symbols unavailable)\n", t->Callstack[i]);
+                }
             }
-            else
-            {
-                LogText("%p (symbols unavailable)\n", t->Callstack[i]);
-            }
-        }
 
-        ++leakCount;
+            LogText("\n");
+
+            ++leakCount;
+        }
     }
 
     if (lock)
@@ -834,15 +928,20 @@ void* DebugPageAllocator::AllocCommittedPageMemory(size_t blockSize)
                 // To consider: Make a generic OVRKernel function for formatting system errors. We could move 
                 // the OVRError GetSysErrorCodeString from LibOVR/OVRError.h to LibOVRKernel/OVR_DebugHelp.h
                 DWORD dwLastError = GetLastError();
-                CHAR  osError[256];
+                WCHAR osError[256];
                 DWORD osErrorBufferCapacity = OVR_ARRAY_COUNT(osError);
                 CHAR  reportedError[384];
-                DWORD length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, (DWORD)dwLastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), osError, osErrorBufferCapacity, nullptr);
+                DWORD length = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, (DWORD)dwLastError, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), osError, osErrorBufferCapacity, nullptr);
         
-                if (length) // If FormatMessageA failed...
-                    OVR_snprintf(reportedError, OVR_ARRAY_COUNT(reportedError), "DebugPageAllocator: VirtualAlloc failed with error: %s", osError);
+                if (length)
+                {
+                    std::string errorBuff = UCSStringToUTF8String(osError, length + 1);
+                    OVR_snprintf(reportedError, OVR_ARRAY_COUNT(reportedError), "DebugPageAllocator: VirtualAlloc failed with error: %s", errorBuff);
+                }
                 else
+                {
                     OVR_snprintf(reportedError, OVR_ARRAY_COUNT(reportedError), "DebugPageAllocator: VirtualAlloc failed with error: %d.", dwLastError);
+                }
 
                 //LogError("%s", reportedError); Disabled because this call turns around and allocates memory, yet we may be in a broken or exhausted memory situation.
                 OVR_FAIL_M(reportedError);

@@ -24,6 +24,8 @@ limitations under the License.
 /// defined goals to achieve in a bite-sized way, so you can build up
 /// in a clear, debugable way. 
 /// Press ESCAPE to go sequentially from one stage to the next.
+/// (Lately, it seems you have to press it pretty promptly, or the code doesn't
+/// run once you reach stage 4)
 /// The code is laid out as #defines, rather than functions, to avoid
 /// the additional overhead of passing variables around which might
 /// clutter the code, in order that you can most clearly see the code
@@ -35,12 +37,12 @@ limitations under the License.
 // Include the Oculus SDK
 #define   OVR_D3D_VERSION 11
 #include "OVR_CAPI_D3D.h"
-using namespace OVR;
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
     // Press ESCAPE to go sequentially from one stage to the next.
+	// Might need to do it quite promptly, to avoid timeouts.
     #include "stage1 - Start with nonVR application.h"
     #include "stage2 - Add LibOVR.h"
     #include "stage3 - Render to eye buffers.h"

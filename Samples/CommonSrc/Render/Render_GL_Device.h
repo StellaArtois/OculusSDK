@@ -244,17 +244,18 @@ public:
     RenderDevice*   Ren;
     ovrSwapTextureSet* TextureSet;
     ovrTexture*     MirrorTexture;
-    int             Width, Height, Samples;
+    int             Width, Height, Samples, Format;
     GLuint          TexId;
 
-    Texture(ovrHmd hmd, RenderDevice* r, int w, int h, int samples);
+    Texture(ovrHmd hmd, RenderDevice* r, int fmt, int w, int h, int samples);
     ~Texture();
 
     GLuint GetTexId() { return TextureSet ? ((ovrGLTexture*)&TextureSet->Textures[TextureSet->CurrentIndex])->OGL.TexId : TexId; }
 
-    virtual int GetWidth() const { return Width; }
-    virtual int GetHeight() const { return Height; }
-    virtual int GetSamples() const { return Samples; }
+    virtual int GetWidth() const OVR_OVERRIDE{ return Width; }
+    virtual int GetHeight() const OVR_OVERRIDE{ return Height; }
+    virtual int GetSamples() const OVR_OVERRIDE{ return Samples; }
+    virtual int GetFormat() const OVR_OVERRIDE{ return Format; }
 
     virtual void SetSampleMode(int);
 
@@ -392,6 +393,8 @@ public:
 
     virtual void ResolveMsaa(OVR::Render::Texture* msaaTex, OVR::Render::Texture* outputTex) OVR_OVERRIDE;
 
+    virtual void SetCullMode(CullMode cullMode) OVR_OVERRIDE;
+
     virtual void Present (bool withVsync)  OVR_OVERRIDE {OVR_UNUSED(withVsync);};
     virtual void SetRenderTarget(Render::Texture* color,
                                  Render::Texture* depth = NULL, Render::Texture* stencil = NULL) OVR_OVERRIDE;
@@ -405,10 +408,9 @@ public:
                         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles, MeshType meshType = Mesh_Scene) OVR_OVERRIDE;
     virtual void RenderWithAlpha(const Fill* fill, Render::Buffer* vertices, Render::Buffer* indices,
                                  const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles) OVR_OVERRIDE;
-    virtual void RenderCompute(const Fill* fill, Render::Buffer* buffer, int invocationSizeInPixels ) OVR_OVERRIDE;
 
     virtual Buffer* CreateBuffer() OVR_OVERRIDE;
-    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1) OVR_OVERRIDE;
+    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr) OVR_OVERRIDE;
     virtual ShaderSet* CreateShaderSet() OVR_OVERRIDE { return new ShaderSet; }
 
     virtual Fill *GetSimpleFill(int flags = Fill::F_Solid) OVR_OVERRIDE;

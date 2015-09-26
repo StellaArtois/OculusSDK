@@ -25,7 +25,7 @@
     <ProjectGuid>{45B9121F-C8E4-4A3E-887B-7C9140533ACE}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Zoom for IO)</ProjectName>
+    <ProjectName>Zoom for IO</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

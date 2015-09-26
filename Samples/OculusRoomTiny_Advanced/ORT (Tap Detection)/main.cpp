@@ -21,8 +21,8 @@ limitations under the License.
 /// on the Rift. 
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 #include "..\Common\Win32_ControlMethods.h" // Control code
 
 //-------------------------------------------------------------------------------------
@@ -47,10 +47,10 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
             // Render world according to colour mode
             switch(color_mode % 4)
             {
-                case(0) : basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye); break;
-                case(1) : basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye,0,0,1,1,1,0,0); break;
-                case(2) : basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye,0,0,1,1,0,1,0); break;
-                case(3) : basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye,0,0,1,1,0,0,1); break;
+                case(0) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye); break;
+                case(1) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,1,0,0); break;
+                case(2) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,0,1,0); break;
+                case(3) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,0,0,1); break;
             }
         }
 

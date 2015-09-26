@@ -25,7 +25,7 @@
     <ProjectGuid>{0D5FB298-E545-4F38-BF63-079EAC636FAF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Motion In Look Direction)</ProjectName>
+    <ProjectName>Motion In Look Direction</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

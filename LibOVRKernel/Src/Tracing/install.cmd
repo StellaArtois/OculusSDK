@@ -6,7 +6,9 @@ set SCRIPTDIR=%~dp0
 
 REM set SDK_MANIFEST_PATH to the SDK install path (e.g. C:\Program Files (x86)\Oculus)
 for /f "delims=" %%a in ('reg query "HKLM\System\CurrentControlSet\Services\OVRService" -v "ImagePath"') do set SDK_MANIFEST_PATH=%%a
-set SDK_MANIFEST_PATH=%SDK_MANIFEST_PATH:~34,-31%\Tools\ETW
+set SDK_MANIFEST_PATH=%SDK_MANIFEST_PATH:    ImagePath    REG_EXPAND_SZ    =%
+set SDK_MANIFEST_PATH=%SDK_MANIFEST_PATH:"=%
+set SDK_MANIFEST_PATH=%SDK_MANIFEST_PATH:\Service\OVRServiceLauncher.exe=%\Tools\ETW
 
 REM Add USERS Read & Execute privileges to the folder
 icacls . /grant BUILTIN\Users:(OI)(CI)(RX) >nul
@@ -94,25 +96,23 @@ REM XXX eventually add OVR-Compositor here...
 set LIBOVR_EVENTS_MAN=%SDK_MANIFEST_PATH%\LibOVREvents.man
 if exist "%SCRIPTDIR%LibOVREvents.man" set LIBOVR_EVENTS_MAN=%SCRIPTDIR%LibOVREvents.man
 
-REM this nightmare command copies the newest version of LibOVRRT*.dll into the current directory without prompting...
-forfiles /p:"%SystemRoot%\System32" /m:LibOVRRT*.dll /c "cmd /c xcopy /y /f /d @path \"%SCRIPTDIR%.\" >nul" >nul 2>nul
+set LIBOVR_PATTERN=LibOVRRT*_0_7.dll
+echo Looking for %LIBOVR_PATTERN% dll's
+REM this nightmare command copies the newest version of %LIBOVR_PATTERN% into the current directory without prompting...
+forfiles /p:"%SystemRoot%\System32" /m:%LIBOVR_PATTERN% /c "cmd /c xcopy /y /f /d @path \"%SCRIPTDIR%.\" >nul" >nul 2>nul
 if not exist "%SCRIPTDIR%..\..\..\LibOVR\Lib\Windows" goto NoLibOVRSource
-forfiles /s /p:"%SCRIPTDIR%..\..\..\LibOVR\Lib\Windows" /m:LibOVRRT*.dll /c "cmd /c xcopy /y /f /d @path \"%SCRIPTDIR%.\" >nul" >nul 2>nul
+forfiles /s /p:"%SCRIPTDIR%..\..\..\LibOVR\Lib\Windows" /m:%LIBOVR_PATTERN% /c "cmd /c xcopy /y /f /d @path \"%SCRIPTDIR%.\" >nul" >nul 2>nul
 :NoLibOVRSource
-for /f "delims=" %%a in ('dir /b /o:d "%SCRIPTDIR%LibOVRRT*.dll"') do set LIBOVR_DLL=%%a
+for /f "delims=" %%a in ('dir /b /o:d "%SCRIPTDIR%%LIBOVR_PATTERN%"') do set LIBOVR_DLL=%%a
 echo Installing %LIBOVR_DLL% manifest...
 REM uninstall any existing manifest first
 wevtutil uninstall-manifest "%LIBOVR_EVENTS_MAN%"
 if %errorlevel% neq 0 exit /b 1
 
-REM try relative paths to the RT .dll
-wevtutil install-manifest "%LIBOVR_EVENTS_MAN%" /rf:"%LIBOVR_DLL%" /mf:"%LIBOVR_DLL%"
-wevtutil get-publisher OVR-SDK-LibOVR > nul
-if %errorlevel% equ 0 goto LibOVRInstalled
-REM try absolute paths to the RT .dll
+REM use absolute paths to the RT .dll, otherwise we risk picking up the wrong (e.g. installed) version from %PATH%
+echo wevtutil install-manifest "%LIBOVR_EVENTS_MAN%" /rf:"%SCRIPTDIR%%LIBOVR_DLL%" /mf:"%SCRIPTDIR%%LIBOVR_DLL%"
 wevtutil install-manifest "%LIBOVR_EVENTS_MAN%" /rf:"%SCRIPTDIR%%LIBOVR_DLL%" /mf:"%SCRIPTDIR%%LIBOVR_DLL%"
-:LibOVRInstalled
-del /f /q "%SCRIPTDIR%LibOVRRT*.dll"
+REM note we can't do del /f /q "%SCRIPTDIR%%LIBOVR_PATTERN%" here because the binary has to be present for ETW enumeration to work
 REM make sure it worked
 wevtutil get-publisher OVR-SDK-LibOVR > nul
 if %errorlevel% neq 0 exit /b 1

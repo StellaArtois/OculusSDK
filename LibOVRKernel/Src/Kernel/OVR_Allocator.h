@@ -193,10 +193,7 @@ public:
 
     // Returns the pointer to the current globally installed Allocator instance.
     // This pointer is used for most of the memory allocations.
-    static Allocator* GetInstance()
-    {
-        return pInstance;
-    }
+    static Allocator* GetInstance();
 
 
     // *** Standard Alignment Alloc/Free
@@ -240,84 +237,26 @@ protected:
     // Remove the allocation from the tracking database
     void            untrackAlloc(void* p);
 
-protected:
-    // onSystemShutdown is called on the allocator during System::Shutdown.
-    // At this point, all allocations should've been freed.
-    virtual void    onSystemShutdown()
-    { }
-
-public:
-    static  void    setInstance(Allocator* palloc)    
-    {
-        OVR_ASSERT((pInstance == 0) || (palloc == 0));
-        pInstance = palloc;
-    }
-
-private:
-    static Allocator* pInstance;
+    // Lock used during LibOVR execution to guard the tracked allocation list.
+    Lock TrackLock;
 
 protected:
     Allocator() {}
 
 public:
-    // Lock used during LibOVR execution to guard the tracked allocation list.
-    Lock TrackLock;
+    //------------------------------------------------------------------------
+    // ***** DumpMemory
 
+    // Enable/disable leak tracking mode and check if currently tracking.
     static void     SetLeakTracking(bool enabled);
     static bool     IsTrackingLeaks();
-};
 
-
-//------------------------------------------------------------------------
-// ***** Allocator_SingletonSupport
-
-// Allocator_SingletonSupport is a Allocator wrapper class that implements
-// the InitSystemSingleton static function, used to create a global singleton
-// used for the OVR::System default argument initialization.
-//
-// End users implementing custom Allocator interface don't need to make use of this base
-// class; they can just create an instance of their own class on stack and pass it to System.
-
-template<class D>
-class Allocator_SingletonSupport : public Allocator
-{
-    struct AllocContainer
-    {        
-        size_t Data[(sizeof(D) + sizeof(size_t)-1) / sizeof(size_t)];
-        bool  Initialized;
-        AllocContainer() : Initialized(0) { }
-    };
-
-    AllocContainer* pContainer;
-
-public:
-    Allocator_SingletonSupport() : pContainer(0)
-    { }
-
-    // Creates a singleton instance of this Allocator class used
-    // on OVR_DEFAULT_ALLOCATOR during System initialization.
-    static  D*  InitSystemSingleton()
-    {
-        static AllocContainer Container;
-        OVR_ASSERT(Container.Initialized == false);
-
-        Allocator_SingletonSupport<D> *presult = Construct<D>((void*)Container.Data);
-        presult->pContainer   = &Container;
-        Container.Initialized = true;
-        return (D*)presult;
-    }
-
-protected:
-    virtual void onSystemShutdown()
-    {
-        Allocator::onSystemShutdown();
-        if (pContainer)
-        {
-            pContainer->Initialized = false;
-            pContainer = nullptr;
-            Destruct((D*)this);
-        }
-    }
+    // Displays information about outstanding allocations, typically for the 
+    // purpose of reporting leaked memory on application or module shutdown.
+    // This should be used instead of, for example, VC++ _CrtDumpMemoryLeaks 
+    // because it allows us to dump additional information about our allocations.
+    // Returns the number of currently outstanding heap allocations.
+    static int      DumpMemory();
 };
 
 
@@ -327,7 +266,7 @@ protected:
 // This allocator is created and used if no other allocator is installed.
 // Default allocator delegates to system malloc.
 
-class DefaultAllocator : public Allocator_SingletonSupport<DefaultAllocator>
+class DefaultAllocator : public Allocator
 {
 public:
     virtual void*   Alloc(size_t size);
@@ -416,7 +355,7 @@ public:
 //   Allocations made with AllocAligned or ReallocAligned must be Freed via FreeAligned, as per the base class requirement.
 //
 
-class DebugPageAllocator : public Allocator_SingletonSupport<DebugPageAllocator>
+class DebugPageAllocator : public Allocator
 {
 public:
     DebugPageAllocator();
@@ -671,17 +610,6 @@ public:
     // Redefine all new & delete operators.
     OVR_MEMORY_REDEFINE_NEW(NewOverrideBase)
 };
-
-
-//------------------------------------------------------------------------
-// ***** DumpMemory
-
-// Displays information about outstanding allocations, typically for the 
-// purpose of reporting leaked memory on application or module shutdown.
-// This should be used instead of, for example, VC++ _CrtDumpMemoryLeaks 
-// because it allows us to dump additional information about our allocations.
-// Returns the number of currently outstanding heap allocations.
-int DumpMemory();
 
 
 //------------------------------------------------------------------------

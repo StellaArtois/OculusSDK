@@ -33,50 +33,58 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"  // Basic VR
 
+struct Monoscopic : BasicVR
+{
+    Monoscopic(HINSTANCE hinst) : BasicVR(hinst, L"Monoscopic") {}
+
+    void MainLoop()
+    {
+        // Ensure symmetrical FOV in a simplistic way for now.
+        // For DK2, this is more or less identical to the ideal FOV,
+        // but for Hmd's where it isn't, then there will be performance
+        // savings by drawing less of the eye texture for each eye,
+        ovrFovPort newFov[2];
+        newFov[0].UpTan    = max(HmdDesc.DefaultEyeFov[0].UpTan,    HmdDesc.DefaultEyeFov[1].UpTan);
+        newFov[0].DownTan  = max(HmdDesc.DefaultEyeFov[0].DownTan,  HmdDesc.DefaultEyeFov[1].DownTan);
+        newFov[0].LeftTan  = max(HmdDesc.DefaultEyeFov[0].LeftTan,  HmdDesc.DefaultEyeFov[1].LeftTan);
+        newFov[0].RightTan = max(HmdDesc.DefaultEyeFov[0].RightTan, HmdDesc.DefaultEyeFov[1].RightTan);
+        newFov[1] = newFov[0];
+
+	    Layer[0] = new VRLayer(HMD, newFov);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+
+            // Monoscopic
+            if (!DIRECTX.Key['1'])
+            {
+                // Set IPD to zero, so getting 'middle eye'
+                float scaleIPD = 0.0f;
+                Layer[0]->GetEyePoses(0, &scaleIPD);
+
+                // Just do the one eye, the right one.
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, 1);
+
+                // And now insist that the left texture used, is actually the right one.
+                Layer[0]->PrepareLayerHeader(Layer[0]->pEyeRenderTexture[1]);
+            }
+            else // Regular stereoscopic for comparison
+            {
+                Layer[0]->GetEyePoses();
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, 0);
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, 1);
+                Layer[0]->PrepareLayerHeader();
+            }
+
+            DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-
-    // Ensure symmetrical FOV in a simplistic way for now.
-    // For DK2, this is more or less identical to the ideal FOV,
-    // but for Hmd's where it isn't, then there will be performance
-    // savings by drawing less of the eye texture for each eye,
-    ovrFovPort newFov[2];
-    newFov[0].UpTan    = max(basicVR.HMD->DefaultEyeFov[0].UpTan,    basicVR.HMD->DefaultEyeFov[1].UpTan);
-    newFov[0].DownTan  = max(basicVR.HMD->DefaultEyeFov[0].DownTan,  basicVR.HMD->DefaultEyeFov[1].DownTan);
-    newFov[0].LeftTan  = max(basicVR.HMD->DefaultEyeFov[0].LeftTan,  basicVR.HMD->DefaultEyeFov[1].LeftTan);
-    newFov[0].RightTan = max(basicVR.HMD->DefaultEyeFov[0].RightTan, basicVR.HMD->DefaultEyeFov[1].RightTan);
-    newFov[1] = newFov[0];
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD, newFov);
-    
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        // Monoscopic
-        if (!DIRECTX.Key['1'])
-        {
-            // Set IPD to zero, so getting 'middle eye'
-            float scaleIPD = 0.0f;
-            basicVR.Layer[0]->GetEyePoses(0, &scaleIPD);
-
-            // Just do the one eye, the right one.
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, 1);
-
-            // And now insist that the left texture used, is actually the right one.
-            basicVR.Layer[0]->PrepareLayerHeader(basicVR.Layer[0]->pEyeRenderTexture[1]);
-            basicVR.DistortAndPresent(1);
-        }
-        else // Regular stereoscopic for comparison
-        {
-            basicVR.Layer[0]->GetEyePoses();
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, 0);
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, 1);
-            basicVR.Layer[0]->PrepareLayerHeader();
-            basicVR.DistortAndPresent(1);
-        }
-    }
-    return (basicVR.Release(hinst));
+	Monoscopic app(hinst);
+    return app.Run();
 }

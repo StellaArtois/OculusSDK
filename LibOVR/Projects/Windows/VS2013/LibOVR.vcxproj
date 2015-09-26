@@ -35,14 +35,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Include\OVR_CAPI_0_6_0.h" />
+    <ClInclude Include="..\..\..\Include\Extras\OVR_CAPI_Util.h" />
+    <ClInclude Include="..\..\..\Include\Extras\OVR_StereoProjection.h" />
+    <ClInclude Include="..\..\..\Include\OVR_CAPI_0_7_0.h" />
     <ClInclude Include="..\..\..\Include\OVR_CAPI_D3D.h" />
     <ClInclude Include="..\..\..\Include\OVR_CAPI_GL.h" />
     <ClInclude Include="..\..\..\Include\OVR_CAPI_Keys.h" />
-    <ClInclude Include="..\..\..\Include\OVR_CAPI_Util.h" />
     <ClInclude Include="..\..\..\Include\OVR_ErrorCode.h" />
     <ClInclude Include="..\..\..\Include\OVR_Version.h" />
-    <ClInclude Include="..\..\..\Src\OVR_StereoProjection.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Src\OVR_CAPIShim.c" />
@@ -233,6 +233,7 @@
       <AdditionalOptions>/FC %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ForcedIncludeFiles />
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

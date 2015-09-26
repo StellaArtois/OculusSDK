@@ -68,6 +68,9 @@ public:
 
     float               GetScaledEyeHeight() { return UserEyeHeight * HeightScale; }
 
+    // Accounts for ComfortTurn setting.
+    Anglef              GetApparentBodyYaw();
+
     Player();
     ~Player();
 
@@ -79,7 +82,7 @@ public:
     // Where the avatar coordinate system (and body) is positioned and oriented in the virtual world
     // Modified by gamepad/mouse input
     Vector3f    BodyPos;
-    Anglef      BodyYaw;
+    Anglef      BodyYaw;    // Probably call GetApparentBodyYaw() instead.
 
     // Where the player head is positioned and oriented in the real world
     Posef       HeadPose;
@@ -91,6 +94,7 @@ public:
     uint8_t     MoveRight;
     Vector3f    GamepadMove, GamepadRotate;
     bool        bMotionRelativeToBody;
+    float       ComfortTurnSnap;
 };
 
 #endif

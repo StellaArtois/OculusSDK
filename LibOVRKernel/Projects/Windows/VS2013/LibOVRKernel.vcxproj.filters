@@ -162,6 +162,15 @@
     <ClInclude Include="..\..\..\Src\Util\Util_GL_Blitter.h">
       <Filter>Util</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameEventData.h">
+      <Filter>Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameListener.h">
+      <Filter>Tracing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameUtils.h">
+      <Filter>Tracing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Src\Kernel\OVR_File.cpp">
@@ -265,6 +274,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Src\Util\Util_GL_Blitter.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameEventData.cpp">
+      <Filter>Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameListener.cpp">
+      <Filter>Tracing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameUtils.cpp">
+      <Filter>Tracing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

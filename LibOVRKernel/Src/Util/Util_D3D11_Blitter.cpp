@@ -180,15 +180,12 @@ bool Blitter::Blt(ID3D11RenderTargetView* dest, ID3D11ShaderResourceView* source
         return false;
     }
 
-    ID3D11RenderTargetView* nullRTVs[] = { nullptr, nullptr, nullptr, nullptr };
-    ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr, nullptr };
-
-    Context1->OMSetRenderTargets(_countof(nullRTVs), nullRTVs, nullptr);
-    Context1->PSSetShaderResources(0, _countof(nullSRVs), nullSRVs);
-
     // Switch to our state
     Ptr<ID3DDeviceContextState> existingState;
     Context1->SwapDeviceContextState(BltState, &existingState.GetRawRef());
+
+    ID3D11RenderTargetView* nullRTVs[] = { nullptr, nullptr, nullptr, nullptr };
+    ID3D11ShaderResourceView* nullSRVs[] = { nullptr, nullptr, nullptr, nullptr };
 
     Context1->OMSetRenderTargets(_countof(nullRTVs), nullRTVs, nullptr);
     Context1->PSSetShaderResources(0, _countof(nullSRVs), nullSRVs);

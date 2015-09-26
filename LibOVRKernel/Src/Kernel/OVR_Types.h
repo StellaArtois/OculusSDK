@@ -38,7 +38,6 @@ limitations under the License.
 #  endif
 #endif
 
-
 //-----------------------------------------------------------------------------------
 // ****** Operating system identification
 //
@@ -639,9 +638,9 @@ struct OVR_GUID
                 intptr_t ovrAssertUserParam;                                                                   \
                 OVR::OVRAssertionHandler ovrAssertUserHandler = OVR::GetAssertionHandler(&ovrAssertUserParam); \
                                                                                                                \
-                if (OVR::IsAutomationRunning())                                                                \
+                if (OVR::IsAutomationRunning() && !OVR::OVRIsDebuggerPresent())                                \
                 {                                                                                              \
-                    abort();                                                                                   \
+					/* Do nothing to allow error code examination */										   \
                 }                                                                                              \
                 else if (ovrAssertUserHandler && !OVR::OVRIsDebuggerPresent())                                 \
                 {                                                                                              \
@@ -739,35 +738,6 @@ namespace OVR
     // Currently defined in OVR_DebugHelp.cpp
     bool OVRIsDebuggerPresent();
 }
-
-
-// ------------------------------------------------------------------------
-// ***** static_assert
-//
-// Portable support for C++11 static_assert.
-// Acts as if the following were declared:
-//     void static_assert(bool const_expression, const char* msg);
-//
-// Example usage:
-//     static_assert(sizeof(int32_t) == 4, "int32_t expected to be 4 bytes.");
-
-#if defined(OVR_CPP_NO_STATIC_ASSERT) // If the compiler doesn't provide it intrinsically...
-    #if !defined(OVR_SA_UNUSED)
-    #if defined(OVR_CC_GNU) || defined(OVR_CC_CLANG)
-        #define OVR_SA_UNUSED __attribute__((unused))
-    #else
-        #define OVR_SA_UNUSED
-    #endif
-    #define OVR_SA_PASTE(a,b) a##b
-    #define OVR_SA_HELP(a,b)  OVR_SA_PASTE(a,b)
-    #endif
-
-    #if defined(__COUNTER__)
-        #define static_assert(expression, msg) typedef char OVR_SA_HELP(compileTimeAssert, __COUNTER__) [((expression) != 0) ? 1 : -1] OVR_SA_UNUSED
-    #else
-        #define static_assert(expression, msg) typedef char OVR_SA_HELP(compileTimeAssert, __LINE__) [((expression) != 0) ? 1 : -1] OVR_SA_UNUSED
-    #endif
-#endif
 
 
 // ------------------------------------------------------------------------

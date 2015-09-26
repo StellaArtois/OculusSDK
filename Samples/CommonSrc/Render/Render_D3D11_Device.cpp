@@ -21,7 +21,7 @@ limitations under the License.
 
 ************************************************************************************/
 
-#define GPU_PROFILING 0
+#define GPU_PROFILING 1
 
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -148,13 +148,12 @@ static const char* MultiTexturePixelShaderSrc =
     "};\n"
     "float4 main(in Varyings ov) : SV_Target\n"
     "{\n"
-    "float4 color1;\n"
-    "float4 color2;\n"
-    "	color1 = Texture[0].Sample(Linear[0], ov.TexCoord);\n"
-    "	color2 = Texture[1].Sample(Linear[1], ov.TexCoord1);\n"
-    "	color2.rgb = color2.rgb * lerp(1.9, 1.2, saturate(length(color2.rgb)));\n"
+    "   float4 color1 = Texture[0].Sample(Linear[0], ov.TexCoord);\n"
+    "   float4 color2 = Texture[1].Sample(Linear[1], ov.TexCoord1);\n"
+    "	color2.rgb = sqrt(color2.rgb);\n"
+    "	color2.rgb = color2.rgb * lerp(0.2, 1.2, saturate(length(color2.rgb)));\n"
     "	color2 = color1 * color2;\n"
-    "   if (color2.a <= 0.4)\n"
+    "   if (color2.a <= 0.6)\n"
     "		discard;\n"
     "	return float4(color2.rgb / color2.a, 1);\n"
     "}\n";
@@ -715,7 +714,7 @@ static ShaderSource FShaderSrcs[FShader_Count] =
 };
 
 
-RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
+RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window, ovrGraphicsLuid luid) :
     Render::RenderDevice(hmd),
     DXGIFactory(),
     Window(window),
@@ -732,10 +731,11 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
     PreFullscreenH(0),
     BackBuffer(),
     BackBufferRT(),
-    BackBufferUAV(),
     CurRenderTarget(),
     CurDepthBuffer(),
-    Rasterizer(),
+    RasterizerCullOff(),
+    RasterizerCullBack(),
+    RasterizerCullFront(),
     BlendState(),
     //DepthStates[]
     CurDepthState(),
@@ -781,12 +781,50 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
     DXGIFactory = NULL;
     hr = CreateDXGIFactory1(__uuidof(IDXGIFactory), (void**)(&DXGIFactory.GetRawRef()));
     OVR_D3D_CHECK_RET(hr);
+    UINT adapterNum = 0;
+    bool adapterFound = false;
 
-    if (!Adapter)
+    LUID* pLuid = (LUID*)&luid;
+
+    if ((pLuid->HighPart | pLuid->LowPart) == 0)
     {
-        hr = DXGIFactory->EnumAdapters(0, &Adapter.GetRawRef());
-        OVR_D3D_CHECK_RET(hr);
+        // Allow to use null/default adapter for applications that may render
+        // a window without an HMD.
+        Adapter = nullptr;
     }
+    else
+    {
+        do
+        {
+            Adapter = nullptr;
+
+            hr = DXGIFactory->EnumAdapters(adapterNum, &Adapter.GetRawRef());
+
+            if (SUCCEEDED(hr) && Adapter)
+            {
+                DXGI_ADAPTER_DESC adapterDesc;
+
+                Adapter->GetDesc(&adapterDesc);
+                if (adapterDesc.AdapterLuid.HighPart == pLuid->HighPart &&
+                    adapterDesc.AdapterLuid.LowPart == pLuid->LowPart)
+                {
+                    adapterFound = true;
+                    break;
+                }
+            }
+
+            ++adapterNum;
+        } while (SUCCEEDED(hr));
+
+        OVR_ASSERT(adapterFound);
+        if (!adapterFound)
+        {
+            // This is unfortunate. The HMD's adapter disappeared during creating our
+            // adapter.
+            throw AdapterNotFoundException();
+        }
+    }
+    
 
     int flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 
@@ -797,16 +835,16 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
         flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-    Device = NULL;
+    Device  = NULL;
     Context = NULL;
     D3D_FEATURE_LEVEL featureLevel; // TODO: Limit certain features based on D3D feature level
     hr = D3D11CreateDevice(Adapter, Adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
-        NULL, flags, NULL, 0, D3D11_SDK_VERSION,
-        &Device.GetRawRef(), &featureLevel, &Context.GetRawRef());
+                           NULL, flags, NULL, 0, D3D11_SDK_VERSION,
+                           &Device.GetRawRef(), &featureLevel, &Context.GetRawRef());
     OVR_D3D_CHECK_RET(hr);
 
     if (!RecreateSwapChain())
-        return;
+        throw SwapChainCreationFailedException();
 
     CurRenderTarget = NULL;
     for (int i = 0; i < Shader_Count; i++)
@@ -900,9 +938,19 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
     rs.CullMode = D3D11_CULL_BACK;      // Don't use D3D11_CULL_NONE as it will cause z-fighting on certain double-sided thin meshes (e.g. leaves)
     rs.DepthClipEnable = true;
     rs.FillMode = D3D11_FILL_SOLID;
-    Rasterizer = NULL;
-    hr = Device->CreateRasterizerState(&rs, &Rasterizer.GetRawRef());
+    RasterizerCullBack = NULL;
+    hr = Device->CreateRasterizerState(&rs, &RasterizerCullBack.GetRawRef());
     OVR_D3D_CHECK_RET(hr);
+
+    rs.CullMode = D3D11_CULL_FRONT;
+    RasterizerCullFront = NULL;
+    hr = Device->CreateRasterizerState(&rs, &RasterizerCullFront.GetRawRef());
+    OVR_D3D_CHECK_RET(hr);
+
+    rs.CullMode = D3D11_CULL_NONE;
+    RasterizerCullOff = NULL;
+    hr = Device->CreateRasterizerState(&rs, &RasterizerCullOff.GetRawRef());
+    OVR_D3D_CHECK_RET(hr);    
 
     QuadVertexBuffer = *CreateBuffer();
     const Render::Vertex QuadVertices[] =
@@ -920,13 +968,12 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window) :
     {
         OVR_ASSERT(false);
     }
+
+    Context->QueryInterface(IID_PPV_ARGS(&UserAnnotation.GetRawRef()));
 }
 
 RenderDevice::~RenderDevice()
 {
-    DefaultTextureFill.Clear();
-    DefaultTextureFillAlpha.Clear();
-    DefaultTextureFillPremult.Clear();
 }
 
 void RenderDevice::DeleteFills()
@@ -937,9 +984,9 @@ void RenderDevice::DeleteFills()
 }
 
 // Implement static initializer function to create this class.
-Render::RenderDevice* RenderDevice::CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd)
+Render::RenderDevice* RenderDevice::CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd, ovrGraphicsLuid luid)
 {
-    Render::D3D11::RenderDevice* render = new RenderDevice(hmd, rp, (HWND)oswnd);
+    Render::D3D11::RenderDevice* render = new RenderDevice(hmd, rp, (HWND)oswnd, luid);
 
     // Sanity check to make sure our resources were created.
     // This should stop a lot of driver related crashes we have experienced
@@ -970,7 +1017,6 @@ bool RenderDevice::RecreateSwapChain()
     scDesc.BufferDesc.RefreshRate.Numerator = 0;
     scDesc.BufferDesc.RefreshRate.Denominator = 1;
     scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    scDesc.BufferUsage |= DXGI_USAGE_UNORDERED_ACCESS;
     scDesc.OutputWindow = Window;
     scDesc.SampleDesc.Count = 1;
     OVR_ASSERT ( scDesc.SampleDesc.Count >= 1 );        // 0 is no longer valid.
@@ -989,17 +1035,13 @@ bool RenderDevice::RecreateSwapChain()
 
     BackBuffer = NULL;
     BackBufferRT = NULL;
-    BackBufferUAV = NULL;
     hr = SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&BackBuffer.GetRawRef());
     OVR_D3D_CHECK_RET_FALSE(hr);
 
     hr = Device->CreateRenderTargetView(BackBuffer, NULL, &BackBufferRT.GetRawRef());
     OVR_D3D_CHECK_RET_FALSE(hr);
 
-    hr = Device->CreateUnorderedAccessView(BackBuffer, NULL, &BackBufferUAV.GetRawRef());
-    OVR_D3D_CHECK_RET_FALSE(hr);
-
-    Texture* depthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1);
+    Texture* depthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1, Texture_Depth32f);
     CurDepthBuffer = depthBuffer;
     if (CurRenderTarget == NULL && depthBuffer != NULL)
     {
@@ -1027,16 +1069,6 @@ ovrTexture Texture::Get_ovrTexture()
     texData->pTexture = GetTex();
 
     return tex;
-}
-
-void RenderDevice::SetWindowSize(int w, int h)
-{
-    // This code is rendered a no-op
-    // It interferes with proper driver operation in
-    // application mode and doesn't add any value in
-    // compatibility mode
-    OVR_UNUSED(w);
-    OVR_UNUSED(h);
 }
 
 void RenderDevice::SetViewport(const Recti& vp)
@@ -1089,7 +1121,7 @@ void RenderDevice::SetDepthMode(bool enable, bool write, CompareFunc func)
     CurDepthState = DepthStates[index];
 }
 
-Texture* RenderDevice::GetDepthBuffer(int w, int h, int ms)
+Texture* RenderDevice::GetDepthBuffer(int w, int h, int ms, TextureFormat depthFormat)
 {
     for (unsigned i = 0; i < DepthBuffers.GetSize(); i++)
     {
@@ -1098,7 +1130,13 @@ Texture* RenderDevice::GetDepthBuffer(int w, int h, int ms)
             return DepthBuffers[i];
     }
 
-    Ptr<Texture> newDepth = *CreateTexture(Texture_Depth | ms, w, h, NULL);
+    OVR_ASSERT_M(
+        depthFormat == Texture_Depth32f ||
+        depthFormat == Texture_Depth24Stencil8 ||
+        depthFormat == Texture_Depth32fStencil8 ||
+        depthFormat == Texture_Depth16, "Unknown depth buffer format");
+
+    Ptr<Texture> newDepth = *CreateTexture(depthFormat | ms, w, h, NULL);
     if (newDepth == NULL)
     {
         OVR_DEBUG_LOG(("Failed to get depth buffer."));
@@ -1176,7 +1214,6 @@ bool Buffer::Data(int use, const void *buffer, size_t size)
         Use = 0;
         Dynamic = false;
     }
-    D3DUav = NULL;
 
     D3D11_BUFFER_DESC desc;
     memset(&desc, 0, sizeof(desc));
@@ -1249,11 +1286,6 @@ bool Buffer::Data(int use, const void *buffer, size_t size)
     {
         hr = Ren->Device->CreateShaderResourceView(D3DBuffer, NULL, &D3DSrv.GetRawRef());
         OVR_D3D_CHECK_RET_FALSE(hr);
-
-#if 0           // Right now we do NOT ask for UAV access (see flags above).
-        hr = Ren->Device->CreateUnorderedAccessView(D3DBuffer, NULL, &D3DUav.GetRawRef());
-        OVR_D3D_CHECK_RET_FALSE(hr);
-#endif
     }
 
     Use = use;
@@ -1618,13 +1650,13 @@ Texture::~Texture()
 {
     if (TextureSet)
     {
-        ovrHmd_DestroySwapTextureSet(Hmd, TextureSet);
+        ovr_DestroySwapTextureSet(Hmd, TextureSet);
         TextureSet = nullptr;
     }
 
     if (MirrorTex)
     {
-        ovrHmd_DestroyMirrorTexture(Hmd, MirrorTex);
+        ovr_DestroyMirrorTexture(Hmd, MirrorTex);
         MirrorTex = nullptr;
     }
 }
@@ -1767,12 +1799,33 @@ void RenderDevice::GenerateSubresourceData(
     }
 }
 
+static DXGI_FORMAT ConvertDXGIFormatToSrgb(DXGI_FORMAT inFormat)
+{
+    switch (inFormat)
+    {
+        // only a handful of types actually have sRGB versions
+    case DXGI_FORMAT_R8G8B8A8_UNORM:            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    case DXGI_FORMAT_BC1_UNORM:                 return DXGI_FORMAT_BC1_UNORM_SRGB;     
+    case DXGI_FORMAT_BC2_UNORM:                 return DXGI_FORMAT_BC2_UNORM_SRGB;     
+    case DXGI_FORMAT_BC3_UNORM:                 return DXGI_FORMAT_BC3_UNORM_SRGB;     
+    case DXGI_FORMAT_B8G8R8A8_UNORM:            return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:            return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+    case DXGI_FORMAT_BC7_UNORM:                 return DXGI_FORMAT_BC7_UNORM_SRGB;     
+
+    // The rest will just return the same format back
+    default:                                    return inFormat;
+    }
+}
+
 #define _256Megabytes 268435456
 #define _512Megabytes 536870912
 
-Texture* RenderDevice::CreateTexture(int format, int width, int height, const void* data, int mipcount)
+Texture* RenderDevice::CreateTexture(int format, int width, int height, const void* data, int mipcount, ovrResult* error)
 {
     HRESULT hr;
+
+    if(error != nullptr)
+        *error = ovrSuccess;
 
     OVR_ASSERT(Device != NULL);
 
@@ -1801,6 +1854,8 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
     {
         imageDimUpperLimit = 1024;
     }
+
+    bool isDepth = ((format & Texture_DepthMask) != 0);
 
     if ((format & Texture_TypeMask) == Texture_DXT1 ||
         (format & Texture_TypeMask) == Texture_DXT3 ||
@@ -1865,7 +1920,7 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
 
         D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
         memset(&SRVDesc, 0, sizeof(SRVDesc));
-        SRVDesc.Format = static_cast<DXGI_FORMAT>(format);
+        SRVDesc.Format = static_cast<DXGI_FORMAT>(convertedFormat);
         SRVDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
         SRVDesc.Texture2D.MipLevels = desc.MipLevels;
 
@@ -1889,28 +1944,49 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
         bool createDepthSrv = (format & Texture_SampleDepth) > 0;
 
         DXGI_FORMAT d3dformat;
+        DXGI_FORMAT srvFormat;
         int         bpp;
         switch (format & Texture_TypeMask)
         {
         case Texture_BGRA:
             bpp = 4;
             d3dformat = (format & Texture_SRGB) ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
+            srvFormat = d3dformat;
             break;
         case Texture_RGBA:
             bpp = 4;
             d3dformat = (format & Texture_SRGB) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+            srvFormat = d3dformat;
             break;
         case Texture_R:
             bpp = 1;
             d3dformat = DXGI_FORMAT_R8_UNORM;
+            srvFormat = d3dformat;
             break;
         case Texture_A:
             bpp = 1;
             d3dformat = DXGI_FORMAT_A8_UNORM;
+            srvFormat = d3dformat;
             break;
-        case Texture_Depth:
+        case Texture_Depth32f:
             bpp = 0;
             d3dformat = createDepthSrv ? DXGI_FORMAT_R32_TYPELESS : DXGI_FORMAT_D32_FLOAT;
+            srvFormat = DXGI_FORMAT_R32_FLOAT;
+            break;
+        case Texture_Depth24Stencil8:
+            bpp = 0;
+            d3dformat = createDepthSrv ? DXGI_FORMAT_R24G8_TYPELESS: DXGI_FORMAT_D24_UNORM_S8_UINT;
+            srvFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+            break;
+        case Texture_Depth16:
+            bpp = 0;
+            d3dformat = createDepthSrv ? DXGI_FORMAT_R16_TYPELESS : DXGI_FORMAT_D16_UNORM;
+            srvFormat = DXGI_FORMAT_R16_UNORM;
+            break;
+        case Texture_Depth32fStencil8:
+            bpp = 0;
+            d3dformat = createDepthSrv ? DXGI_FORMAT_R32G8X24_TYPELESS : DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+            srvFormat = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
             break;
         default:
             OVR_ASSERT(false);
@@ -1932,8 +2008,8 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
         dsDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
         dsDesc.CPUAccessFlags = 0;
         dsDesc.MiscFlags = 0;
-
-        if ((format & Texture_TypeMask) == Texture_Depth)
+        
+        if (isDepth)
         {
             dsDesc.BindFlags = createDepthSrv ? (dsDesc.BindFlags | D3D11_BIND_DEPTH_STENCIL) : D3D11_BIND_DEPTH_STENCIL;
         }
@@ -1943,12 +2019,26 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
         }
 
         int count = 1;
-
+        
         // Only need to create full texture set for render targets
         if (format & Texture_Mirror)
         {
-            ovrHmd_CreateMirrorTextureD3D11(Hmd, Device, &dsDesc, &NewTex->MirrorTex);
-            if (!NewTex->MirrorTex)
+            D3D11_TEXTURE2D_DESC sdkTextureDesc = dsDesc;
+            // Override the format to be sRGB so that the compositor always treats eye buffers
+            // as if they're sRGB even if we are sending in linear format textures
+            sdkTextureDesc.Format = ConvertDXGIFormatToSrgb(srvFormat);
+
+            // Create typeless when we are rendering as non-sRGB since we will override the texture format in the RTV
+            bool reinterpretSrgbAsLinear = (format & Texture_SRGB) == 0;
+            unsigned compositorTextureFlags = 0;
+            if (reinterpretSrgbAsLinear)
+                compositorTextureFlags |= ovrSwapTextureSetD3D11_Typeless;
+
+            ovrResult result = ovr_CreateMirrorTextureD3D11(Hmd, Device, &sdkTextureDesc, compositorTextureFlags, &NewTex->MirrorTex);
+            if (error != nullptr)
+                *error = result;
+
+            if (result == ovrError_DisplayLost || !NewTex->MirrorTex)
             {
                 OVR_ASSERT(false);
                 return NULL;
@@ -1956,18 +2046,51 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
 
             ovrD3D11Texture* tex = (ovrD3D11Texture*)NewTex->MirrorTex;
             NewTex->Tex = tex->D3D11.pTexture;
-            NewTex->TexSv.PushBack(tex->D3D11.pSRView);
+
+            // If we are overriding the texture format
+            // then ignore the SRV the SDK returns us and create our own.
+            if (reinterpretSrgbAsLinear)
+            {
+                D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
+                srvd.Format = dsDesc.Format;
+                srvd.ViewDimension = dsDesc.SampleDesc.Count > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
+                srvd.Texture2D.MostDetailedMip = 0;
+                srvd.Texture2D.MipLevels = dsDesc.MipLevels;
+
+                Ptr<ID3D11ShaderResourceView> srv;
+                hr = Device->CreateShaderResourceView(NewTex->Tex, &srvd, &srv.GetRawRef());
+                OVR_D3D_CHECK_RET_NULL(hr);
+
+                NewTex->TexSv.PushBack(srv);
+            }
+            else
+            {
+                NewTex->TexSv.PushBack(tex->D3D11.pSRView);
+            }
 
             NewTex->AddRef();
             return NewTex;
         }
         else if (format & Texture_SwapTextureSet)
         {
-            // Can do this with rendertargets, depth buffers, or normal textures, but *not* MSAA.
-            OVR_ASSERT ( samples == 1);
+            D3D11_TEXTURE2D_DESC sdkTextureDesc = dsDesc;
+            // Override the format to be sRGB so that the compositor always treats eye buffers
+            // as if they're sRGB even if we are sending in linear formatted textures
+            sdkTextureDesc.Format = ConvertDXGIFormatToSrgb(srvFormat);
 
-            ovrHmd_CreateSwapTextureSetD3D11(Hmd, Device.GetPtr(), &dsDesc, &NewTex->TextureSet);
-            if (!NewTex->TextureSet)
+            // Can do this with rendertargets, depth buffers, or normal textures, but *not* MSAA color swap buffers.
+            OVR_ASSERT((samples == 1) || isDepth);
+
+            // Create typeless when we are rendering as non-sRGB since we will override the texture format in the RTV
+            unsigned compositorTextureFlags = 0;
+            if ((format & Texture_SRGB) == 0)
+                compositorTextureFlags |= ovrSwapTextureSetD3D11_Typeless;
+
+            ovrResult result = ovr_CreateSwapTextureSetD3D11(Hmd, Device.GetPtr(), &sdkTextureDesc, compositorTextureFlags, &NewTex->TextureSet);
+            if (error != nullptr)
+                *error = result;
+            
+            if (result == ovrError_DisplayLost || !NewTex->TextureSet)
             {
                 OVR_ASSERT(false);
                 return NULL;
@@ -1998,7 +2121,16 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
                 if (dsDesc.BindFlags & D3D11_BIND_DEPTH_STENCIL)
                 {
                     D3D11_SHADER_RESOURCE_VIEW_DESC depthSrv;
-                    depthSrv.Format = DXGI_FORMAT_R32_FLOAT;
+                    depthSrv.Format = srvFormat;
+                    switch (d3dformat)
+                    {
+                    case DXGI_FORMAT_R32_TYPELESS:      depthSrv.Format = DXGI_FORMAT_R32_FLOAT;    break;
+                    case DXGI_FORMAT_R24G8_TYPELESS:    depthSrv.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;    break;
+                    case DXGI_FORMAT_R16_TYPELESS:      depthSrv.Format = DXGI_FORMAT_R16_UNORM;    break;
+                    case DXGI_FORMAT_R32G8X24_TYPELESS: depthSrv.Format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS; break;
+
+                    default:    OVR_ASSERT(false);      depthSrv.Format = DXGI_FORMAT_R32_FLOAT;
+                    }
                     depthSrv.ViewDimension = samples > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
                     depthSrv.Texture2D.MostDetailedMip = 0;
                     depthSrv.Texture2D.MipLevels = dsDesc.MipLevels;
@@ -2008,7 +2140,13 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
                 }
                 else
                 {
-                    hr = Device->CreateShaderResourceView(tex, NULL, &srv.GetRawRef());
+                    D3D11_SHADER_RESOURCE_VIEW_DESC srvd = {};
+                    srvd.Format = dsDesc.Format;
+                    srvd.ViewDimension = samples > 1 ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
+                    srvd.Texture2D.MostDetailedMip = 0;
+                    srvd.Texture2D.MipLevels = dsDesc.MipLevels;
+
+                    hr = Device->CreateShaderResourceView(tex, &srvd, &srv.GetRawRef());
                     OVR_D3D_CHECK_RET_NULL(hr);
                 }
 
@@ -2054,11 +2192,19 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
                 }
             }
 
-            if ((format & Texture_TypeMask) == Texture_Depth)
+            if (isDepth)
             {
                 D3D11_DEPTH_STENCIL_VIEW_DESC depthDsv;
                 ZeroMemory(&depthDsv, sizeof(depthDsv));
-                depthDsv.Format = DXGI_FORMAT_D32_FLOAT;
+                switch (format & Texture_DepthMask)
+                {
+                case Texture_Depth32f:          depthDsv.Format = DXGI_FORMAT_D32_FLOAT;            break;
+                case Texture_Depth24Stencil8:   depthDsv.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;    break;
+                case Texture_Depth16:           depthDsv.Format = DXGI_FORMAT_D16_UNORM;            break;
+                case Texture_Depth32fStencil8:  depthDsv.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT; break;
+
+                default:    OVR_ASSERT(false);  depthDsv.Format = DXGI_FORMAT_D32_FLOAT;
+                }
                 depthDsv.ViewDimension = samples > 1 ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
                 depthDsv.Texture2D.MipSlice = 0;
 
@@ -2069,8 +2215,13 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
             }
             else if (format & Texture_RenderTarget)
             {
+                D3D11_RENDER_TARGET_VIEW_DESC rtvd = {};
+                rtvd.Format = dsDesc.Format;
+                rtvd.Texture2D.MipSlice = 0;
+                rtvd.ViewDimension = dsDesc.SampleDesc.Count > 1 ? D3D11_RTV_DIMENSION_TEXTURE2DMS : D3D11_RTV_DIMENSION_TEXTURE2D;
+
                 Ptr<ID3D11RenderTargetView> rtv;
-                hr = Device->CreateRenderTargetView(tex, NULL, &rtv.GetRawRef());
+                hr = Device->CreateRenderTargetView(tex, &rtvd, &rtv.GetRawRef());
                 OVR_D3D_CHECK_RET_NULL(hr);
                 NewTex->TexRtv.PushBack(rtv);
             }
@@ -2085,7 +2236,7 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
 
 void RenderDevice::ResolveMsaa(OVR::Render::Texture* msaaTex, OVR::Render::Texture* outputTex)
 {
-    OVR_ASSERT_M(!(((Texture*)msaaTex)->Format & Texture_Depth), "Resolving depth buffers not supported.");
+    OVR_ASSERT_M(!(((Texture*)msaaTex)->Format & Texture_DepthMask), "Resolving depth buffers not supported.");
 
     DXGI_FORMAT resolveFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     if (((Texture*)msaaTex)->Format & Texture_SRGB)
@@ -2096,9 +2247,27 @@ void RenderDevice::ResolveMsaa(OVR::Render::Texture* msaaTex, OVR::Render::Textu
     Context->ResolveSubresource(((Texture*)outputTex)->GetTex(), 0, ((Texture*)msaaTex)->GetTex(), 0, resolveFormat);
 }
 
+void RenderDevice::SetCullMode(CullMode cullMode)
+{
+    switch (cullMode)
+    {
+    case OVR::Render::RenderDevice::Cull_Off:
+        Context->RSSetState(RasterizerCullOff);
+        break;
+    case OVR::Render::RenderDevice::Cull_Back:
+        Context->RSSetState(RasterizerCullBack);
+        break;
+    case OVR::Render::RenderDevice::Cull_Front:
+        Context->RSSetState(RasterizerCullFront);
+        break;
+    default:
+        break;
+    }
+}
+
 void RenderDevice::BeginRendering()
 {
-    Context->RSSetState(Rasterizer);
+    Context->RSSetState(RasterizerCullBack);
 }
 
 void RenderDevice::SetRenderTarget(Render::Texture* color, Render::Texture* depth, Render::Texture* stencil)
@@ -2108,21 +2277,21 @@ void RenderDevice::SetRenderTarget(Render::Texture* color, Render::Texture* dept
     CurRenderTarget = (Texture*)color;
     if (color == NULL)
     {
-        Texture* newDepthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1);
+        Texture* newDepthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1, Texture_Depth32f);
         if (newDepthBuffer == NULL)
         {
             OVR_DEBUG_LOG(("New depth buffer creation failed."));
         }
         if (newDepthBuffer != NULL)
         {
-            CurDepthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1);
+            CurDepthBuffer = GetDepthBuffer(WindowWidth, WindowHeight, 1, Texture_Depth32f);
             Context->OMSetRenderTargets(1, &BackBufferRT.GetRawRef(), CurDepthBuffer->GetDsv());
         }
         return;
     }
     if (depth == NULL)
     {
-        depth = GetDepthBuffer(color->GetWidth(), color->GetHeight(), CurRenderTarget->Samples);
+        depth = GetDepthBuffer(color->GetWidth(), color->GetHeight(), CurRenderTarget->Samples, Texture_Depth32f);
     }
 
     ID3D11ShaderResourceView* sv[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -2277,54 +2446,6 @@ void RenderDevice::Render(const Fill* fill, Render::Buffer* vertices, Render::Bu
     }
 }
 
-
-// This is far less generic than the name suggests - very hard-coded to the distortion CSes.
-void RenderDevice::RenderCompute(const Fill* fill, Render::Buffer* buffer, int invocationSizeInPixels)
-{
-    //Context->CSCSSetShaderResources
-    //Context->CSSetUnorderedAccessViews
-    //Context->CSSetShader
-    //Context->CSSetSamplers
-    //Context->CSSetConstantBuffers
-
-    ShaderSet* shaders = ((ShaderFill*)fill)->GetShaders();
-    ShaderBase* cshader = ((ShaderBase*)shaders->GetShader(Shader_Compute));
-
-    ID3D11UnorderedAccessView *uavRendertarget = BackBufferUAV.GetRawRef();
-    int SizeX = WindowWidth / 2;
-    int SizeY = WindowHeight;
-    if (CurRenderTarget != NULL)
-    {
-        OVR_ASSERT(!"write me");
-        uavRendertarget = NULL; //CurRenderTarget->TexUav.GetRawRef();
-        SizeX = CurRenderTarget->GetWidth() / 2;
-        SizeY = CurRenderTarget->GetHeight();
-    }
-
-    int TileNumX = (SizeX + (invocationSizeInPixels - 1)) / invocationSizeInPixels;
-    int TileNumY = (SizeY + (invocationSizeInPixels - 1)) / invocationSizeInPixels;
-
-    Context->CSSetUnorderedAccessViews(0, 1, &uavRendertarget, NULL);
-    if (buffer != NULL)
-    {
-        // Incoming eye-buffer textures start at t0 onwards, so set this in slot #4
-        // Subtlety - can't put this in slot 0 because fill->Set stops at the first NULL texture.
-        ID3D11ShaderResourceView *d3dSrv = ((Buffer*)buffer)->GetSrv();
-        Context->CSSetShaderResources(4, 1, &d3dSrv);
-    }
-
-    // TODO: uniform/constant buffers
-    cshader->UpdateBuffer(UniformBuffers[Shader_Compute]);
-    cshader->SetUniformBuffer(UniformBuffers[Shader_Compute]);
-
-    // Primitive type is ignored for CS.
-    // This call actually sets the textures and does Context->CSSetShader(). Primitive type is ignored.
-    fill->Set(Prim_Unknown);
-
-    Context->Dispatch(TileNumX, TileNumY, 1);
-}
-
-
 size_t RenderDevice::QueryGPUMemorySize()
 {
     HRESULT hr;
@@ -2418,12 +2539,16 @@ void RenderDevice::RenderImage(float left, float top, float right, float bottom,
 void RenderDevice::BeginGpuEvent(const char* markerText, uint32_t markerColor)
 {
 #if GPU_PROFILING
+    OVR_UNUSED(markerColor);
+
     WCHAR wStr[255];
     size_t newStrLen = 0;
     mbstowcs_s(&newStrLen, wStr, markerText, 255);
     LPCWSTR pwStr = wStr;
 
-    D3DPERF_BeginEvent(markerColor, pwStr);
+    if (UserAnnotation)
+        UserAnnotation->BeginEvent(pwStr);
+
 #else
     OVR_UNUSED(markerText);
     OVR_UNUSED(markerColor);
@@ -2433,7 +2558,8 @@ void RenderDevice::BeginGpuEvent(const char* markerText, uint32_t markerColor)
 void RenderDevice::EndGpuEvent()
 {
 #if GPU_PROFILING
-    D3DPERF_EndEvent();
+    if (UserAnnotation)
+        UserAnnotation->EndEvent();
 #endif
 }
 

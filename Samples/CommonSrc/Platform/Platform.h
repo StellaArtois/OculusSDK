@@ -75,7 +75,7 @@ enum Modifiers
 //-------------------------------------------------------------------------------------
 // ***** SetupGraphicsDeviceSet
 
-typedef RenderDevice* (*RenderDeviceCreateFunc)(ovrHmd hmd, const Render::RendererParams&, void*);
+typedef RenderDevice* (*RenderDeviceCreateFunc)(ovrHmd hmd, const Render::RendererParams&, void*, ovrGraphicsLuid luid);
 
 // SetupGraphicsDeviceSet is a PlatformCore::SetupGraphics initialization helper class,
 // used to build up a list of RenderDevices that can be used for rendering.
@@ -132,11 +132,15 @@ public:
     // Search for a matching graphics renderer based on type argument and initializes it.    
     virtual RenderDevice* SetupGraphics(ovrHmd hmd, const SetupGraphicsDeviceSet& setupGraphicsDesc,
                                         const char* gtype,
-                                        const Render::RendererParams& rp) = 0;
+                                        const Render::RendererParams& rp,
+                                        ovrGraphicsLuid luid) = 0;
+
+    void DestroyGraphics() { pRender.Clear(); }
 
     virtual void		SetMouseMode(MouseMode mm) { OVR_UNUSED(mm); }
 
     virtual void		GetWindowSize(int* w, int* h) const = 0;
+    virtual void        SetWindowSize(int w, int h) = 0;
 
     virtual void		SetWindowTitle(const char*title) = 0;
 	virtual void		PlayMusicFile(const char *fileName) { OVR_UNUSED(fileName); }

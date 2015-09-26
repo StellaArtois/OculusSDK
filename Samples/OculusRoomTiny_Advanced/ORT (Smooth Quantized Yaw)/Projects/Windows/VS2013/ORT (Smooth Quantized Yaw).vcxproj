@@ -25,7 +25,7 @@
     <ProjectGuid>{9F70C17D-9BB8-4FB7-A47E-2E35964AE209}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Smooth Quantized Yaw)</ProjectName>
+    <ProjectName>Smooth Quantized Yaw</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -25,7 +25,7 @@
     <ProjectGuid>{8EE1B393-BE3C-4ADD-8D4C-021A8D24CB29}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>b.  ORT (Freeze Timewarp)</ProjectName>
+    <ProjectName>b. Freeze Timewarp</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

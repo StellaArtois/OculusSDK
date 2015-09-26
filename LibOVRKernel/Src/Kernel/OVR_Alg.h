@@ -1144,6 +1144,26 @@ inline int8_t DecodeBCD(uint8_t byte)
     return (int8_t)decimal;
 }
 
+// Updates the previousCount uint_64t with the new value from the bitCount wrap-around counter newCount32
+// Returns the delta as uint32_t
+// 0 < bitCount <= 32
+template<const unsigned bitCount>
+uint32_t inline UpdateWraparoundCounter(uint64_t* previousCount, uint32_t newCount32)
+{
+    OVR_ASSERT(bitCount <= 32);
+
+    const uint64_t mask = ((uint64_t)1u << bitCount) - 1;
+    OVR_ASSERT((newCount32 & ~mask) == 0);
+
+    // Do int64_t subtraction to avoid invoking what is technically undefined behavior
+    int64_t delta = ((int64_t)newCount32 - (int64_t)(*previousCount & mask));
+    if (delta < 0)
+        delta += ((uint64_t)1u << bitCount);
+
+    *previousCount += delta;
+    // We know that delta >=0 and < (1u << bitCount), and thus fits in a uint32_t
+    return (uint32_t)delta;
+}
 
 
 // Returns true if T is a signed built in type and (x + y) would overflow or underflow the storage maximum or minimum of type T.
@@ -1151,23 +1171,23 @@ template <typename T>
 inline bool SignedAdditionWouldOverflow(T x, T y)
 {
     const T temp = (T)(x + y);
-    return (((temp ^ x) & (temp ^ y)) >> ((sizeof(T) * (T)8) - 1)) != 0;
+    return ((~(x ^ y)) & (x ^ temp)) < 0;
 }
 
 // Returns true if T is a signed type and (x - y) would overflow or underflow the storage maximum or minimum of type T.
 template <typename T>
 inline bool SignedSubtractionWouldOverflow(T x, T y)
 {
-    const T tMin = (T)((T)1 << (T)((sizeof(T) * 8) - 1)); // This is not portable.
-    return (x >= 0) ? (y < (T)(x - (T)-(tMin + 1))) : (y > (T)(x - tMin));
+    y = -y;
+    const T temp = (T)(x + y);
+    return ((temp ^ x) & (temp ^ y)) < 0;
 }
 
 // Returns true if T is an unsigned type and (x + y) would overflow the storage maximum of type T.
 template <typename T>
 inline bool UnsignedAdditionWouldOverflow(T x, T y)
 {
-    const T temp = (T)(x + y);
-    return (temp < x) && (temp < y);
+    return (T)(x + y) < x;
 }
 
 // Returns true if T is an unsigned type and (x - y) would underflow the storage minimum of type T.

@@ -45,8 +45,11 @@ RenderDevice::RenderDevice(ovrHmd hmd, const Render::RendererParams& p, HWND win
 
 
 // Implement static initializer function to create this class.
-Render::RenderDevice* RenderDevice::CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd)
+Render::RenderDevice* RenderDevice::CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd, ovrGraphicsLuid luid)
 {
+    // FIXME: Figure out how to best match luid's in OpenGL
+    OVR_UNUSED(luid);
+
     HWND hwnd = (HWND)oswnd;
 	HDC dc = GetDC(hwnd);
     

@@ -36,7 +36,8 @@ Player::Player() :
     MoveRight(0),
     GamepadMove(),
     GamepadRotate(),
-    bMotionRelativeToBody(false)
+    bMotionRelativeToBody(false),
+    ComfortTurnSnap(-1.0f)
 {
 }
 
@@ -44,20 +45,35 @@ Player::~Player()
 {
 }
 
+// Accounts for ComfortTurn setting.
+Anglef Player::GetApparentBodyYaw()
+{
+    Anglef yaw = BodyYaw;
+    if ( ComfortTurnSnap > 0.0f )
+    {
+        float yawR = yaw.Get();
+        yawR *= 1.0f / ComfortTurnSnap;
+        yawR = floorf ( yawR + 0.5f );
+        yawR *= ComfortTurnSnap;
+        yaw.Set ( yawR );
+    }
+    return yaw;
+}
+
 Vector3f Player::GetPosition()
 {
-    return BodyPos + Quatf(Vector3f(0,1,0), BodyYaw.Get()).Rotate(HeadPose.Translation);
+    return BodyPos + Quatf(Vector3f(0,1,0), GetApparentBodyYaw().Get()).Rotate(HeadPose.Translation);
 }
 
 Quatf Player::GetOrientation(bool baseOnly)
 {
-    Quatf baseQ = Quatf(Vector3f(0,1,0), BodyYaw.Get());
+    Quatf baseQ = Quatf(Vector3f(0,1,0), GetApparentBodyYaw().Get());
     return baseOnly ? baseQ : baseQ * HeadPose.Rotation;
 }
 
 Posef Player::VirtualWorldTransformfromRealPose(const Posef &sensorHeadPose)
 {
-    Quatf baseQ = Quatf(Vector3f(0,1,0), BodyYaw.Get());
+    Quatf baseQ = Quatf(Vector3f(0,1,0), GetApparentBodyYaw().Get());
 
     return Posef(baseQ * sensorHeadPose.Rotation,
                  BodyPos + baseQ.Rotate(sensorHeadPose.Translation));

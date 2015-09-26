@@ -27,38 +27,49 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"        // Basic VR
 
+struct VaryResolution : BasicVR
+{
+    VaryResolution(HINSTANCE hinst) : BasicVR(hinst, L"Vary Resolution") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    Layer[0]->GetEyePoses();
+
+            // Incrememt a clock 
+            static int clock = 0;
+            ++clock;
+
+            for (int eye = 0; eye < 2; ++eye)
+            {
+                // Realtime adjustment of eye buffer resolution,
+                // vertically by pressing 1, horizontally by pressing '2'.
+                if (DIRECTX.Key['1'])
+                {
+                    Layer[0]->EyeRenderViewport[eye].Size.h =
+                        int(Layer[0]->pEyeRenderTexture[eye]->SizeH * (2 + sin(0.05f * clock)) / 3.0f);
+                }
+                if (DIRECTX.Key['2'])
+                {
+                    Layer[0]->EyeRenderViewport[eye].Size.h =
+                        int(Layer[0]->pEyeRenderTexture[eye]->SizeW * (1.25f + sin(0.1f * clock)) / 2.25f);
+                }
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+            }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        basicVR.Layer[0]->GetEyePoses();
-
-        // Incrememt a clock 
-        static int clock = 0;
-        clock++;
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            // Realtime adjustment of eye buffer resolution,
-            // vertically by pressing 1, horizontally by pressing '2'.
-            if (DIRECTX.Key['1']) basicVR.Layer[0]->EyeRenderViewport[eye].Size.h
-                = (int)(basicVR.Layer[0]->pEyeRenderTexture[eye]->Size.h
-                *(2 + sin(0.05f*clock)) / 3.0f);
-            if (DIRECTX.Key['2']) basicVR.Layer[0]->EyeRenderViewport[eye].Size.w
-                = (int)(basicVR.Layer[0]->pEyeRenderTexture[eye]->Size.w
-                                        *(1.25f+sin(0.1f*clock))/2.25f);
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	VaryResolution app(hinst);
+    return app.Run();
 }

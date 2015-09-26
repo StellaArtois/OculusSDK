@@ -36,40 +36,47 @@ limitations under the License.
 #include "..\Common\Win32_BasicVR.h"    // Basic VR
 #include "..\Common\Win32_CameraCone.h" // Camera cone 
 
+struct CameraVolume : BasicVR
+{
+    CameraVolume(HINSTANCE hinst) : BasicVR(hinst, L"Camera Volume") {}
+
+    void MainLoop()
+    {
+        Layer[0] = new VRLayer(HMD);
+
+        CameraCone cameraCone(this);
+
+        while (HandleMessages())
+        {
+            ActionFromInput();
+
+            // As we get eye poses, we also get the tracking state, for use later
+            ovrTrackingState trackingState = Layer[0]->GetEyePoses();
+
+            for (int eye = 0; eye < 2; ++eye)
+            {
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+
+                // Lets clear the depth buffer, so we can see it clearly.
+                // even if that means sorting over the top.
+                // And also we have a different z buffer range, so would sort strangely
+                DIRECTX.Context->ClearDepthStencilView(Layer[0]->pEyeDepthBuffer[eye]->TexDsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+
+                // Note, we vary its visibility
+                // and also note the constant update of the camera's
+                // location and orientation from within the SDK
+                cameraCone.RenderToEyeBuffer(Layer[0], eye, &trackingState, 0.625f);
+            }
+
+            Layer[0]->PrepareLayerHeader();
+            DistortAndPresent(1);
+        }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    CameraCone cameraCone(&basicVR);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        // As we get eye poses, we also get the tracking state, for use later
-        ovrTrackingState trackingState = basicVR.Layer[0]->GetEyePoses();
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye);
-
-            // Lets clear the depth buffer, so we can see it clearly.
-            // even if that means sorting over the top.
-            // And also we have a different z buffer range, so would sort strangely
-            DIRECTX.Context->ClearDepthStencilView(basicVR.Layer[0]->pEyeDepthBuffer[eye]->TexDsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
-
-            // Note, we vary its visibility
-            // and also note the constant update of the camera's
-            // location and orientation from within the SDK
-            cameraCone.RenderToEyeBuffer(basicVR.Layer[0], eye, &trackingState, 0.625f);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-    
-    return (basicVR.Release(hinst));
+	CameraVolume app(hinst);
+    return app.Run();
 }

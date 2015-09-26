@@ -44,7 +44,9 @@ XmlHandler::~XmlHandler()
 bool XmlHandler::ReadFile(const char* fileName, OVR::Render::RenderDevice* pRender,
 	                      OVR::Render::Scene* pScene,
                           OVR::Array<Ptr<CollisionModel> >* pCollisions,
-	                      OVR::Array<Ptr<CollisionModel> >* pGroundCollisions)
+	                      OVR::Array<Ptr<CollisionModel> >* pGroundCollisions,
+                          bool srgbAware /*= false*/,
+                          bool anisotropic /*= false*/)
 {
     if(pXmlDocument->LoadFile(fileName) != 0)
     {
@@ -90,12 +92,16 @@ bool XmlHandler::ReadFile(const char* fileName, OVR::Render::RenderDevice* pRend
 			OVR_sprintf(fname, 300, "%s%s", filePath, textureName);
 		}
 
+        int textureLoadFlags = 0;
+        textureLoadFlags |= srgbAware ? TextureLoad_SrgbAware : 0;
+        textureLoadFlags |= anisotropic ? TextureLoad_Anisotropic : 0;
+
         SysFile* pFile = new SysFile(fname);
 		Ptr<Texture> texture;
 		if (textureName[dotpos + 1] == 'd' || textureName[dotpos + 1] == 'D')
 		{
 			// DDS file
-			Texture* tmp_ptr = LoadTextureDDSTopDown(pRender, pFile);
+            Texture* tmp_ptr = LoadTextureDDSTopDown(pRender, pFile, textureLoadFlags);
 			if(tmp_ptr)
 			{
 				texture.SetPtr(*tmp_ptr);
@@ -103,7 +109,7 @@ bool XmlHandler::ReadFile(const char* fileName, OVR::Render::RenderDevice* pRend
 		}
 		else
 		{
-			Texture* tmp_ptr = LoadTextureTgaTopDown(pRender, pFile);
+            Texture* tmp_ptr = LoadTextureTgaTopDown(pRender, pFile, textureLoadFlags, 255);
 			if(tmp_ptr)
 			{
 				texture.SetPtr(*tmp_ptr);
@@ -130,8 +136,8 @@ bool XmlHandler::ReadFile(const char* fileName, OVR::Render::RenderDevice* pRend
 		{
 			OVR_DEBUG_LOG_TEXT(("%i models remaining...", modelCount - i));
 		}
-		Models.PushBack(*new Model(Prim_Triangles));
         const char* name = pXmlModel->Attribute("name");
+        Models.PushBack(*new Model(Prim_Triangles, name));
         bool isCollisionModel = false;
         pXmlModel->QueryBoolAttribute("isCollisionModel", &isCollisionModel);
         Models[i]->IsCollisionModel = isCollisionModel;
@@ -246,7 +252,7 @@ bool XmlHandler::ReadFile(const char* fileName, OVR::Render::RenderDevice* pRend
             }
             else
             {
-                Models[i]->AddVertex(vertices->At(v).z, vertices->At(v).y, vertices->At(v).x, Color(255, 0, 0, 128),
+                Models[i]->AddVertex(vertices->At(v).z, vertices->At(v).y, vertices->At(v).x, Color(255, 255, 255, 255),
                                       0, 0, 0, 0,
                                       normals->At(v).x, normals->At(v).y, normals->At(v).z);
             }

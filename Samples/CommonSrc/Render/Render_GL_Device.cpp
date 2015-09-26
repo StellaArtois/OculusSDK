@@ -251,13 +251,11 @@ static const char* MultiTextureFragShaderSrc =
     
     "void main()\n"
     "{\n"
-    "    vec4 color = _TEXTURE(Texture0, oTexCoord);\n"
-    
-    "    _FRAGCOLOR = _TEXTURE(Texture1, oTexCoord1);\n"
-    "    _FRAGCOLOR.rgb = _FRAGCOLOR.rgb * mix(1.9, 1.2, clamp(length(_FRAGCOLOR.rgb),0.0,1.0));\n"
-    
-    "    _FRAGCOLOR = color * _FRAGCOLOR;\n"
-    
+    "    vec4 color1 = _TEXTURE(Texture0, oTexCoord);\n"    
+    "    vec4 color2 = _TEXTURE(Texture1, oTexCoord1);\n"
+    "    color2.rgb = sqrt(color2.rgb);\n"
+    "    color2.rgb = color2.rgb * mix(0.2, 1.2, clamp(length(color2.rgb),0.0,1.0));\n"    
+    "    _FRAGCOLOR = color1 * color2;\n"
     "   if (_FRAGCOLOR.a <= 0.6)\n"
     "        discard;\n"
     "}\n";
@@ -624,6 +622,45 @@ static const char* FShaderSrcs[FShader_Count] =
     PostProcessHeightmapTimewarpFragShaderSrc
 };
 
+#if defined(OVR_BUILD_DEBUG)
+static bool CheckFramebufferStatus(GLenum target)
+{
+    GLenum status = glCheckFramebufferStatus(target);
+    switch (status)
+    {
+    case GL_FRAMEBUFFER_UNDEFINED:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_UNDEFINED - returned if the specified framebuffer is the default read or draw framebuffer, but the default framebuffer does not exist."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT - returned if any of the framebuffer attachment points are framebuffer incomplete."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT - returned if the framebuffer does not have at least one image attached to it."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER - returned if the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for any color attachment point named by GL_DRAW_BUFFERi."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER - returned if GL_READ_BUFFER is not GL_NONE and the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER."));
+        break;
+    case GL_FRAMEBUFFER_UNSUPPORTED:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_UNSUPPORTED - returned if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE - returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the value of GL_TEXTURE_SAMPLES. also returned if the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not the same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_TEXTURE_FIXED_SAMPLE_LOCATIONS is not GL_TRUE for all attached textures."));
+        break;
+    case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+        OVR_DEBUG_LOG(("framebuffer not complete: GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS - returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target."));
+        break;
+    default:
+        OVR_DEBUG_LOG(("framebuffer not complete: status 0x%x (unknown)", status));
+        break;
+    case GL_FRAMEBUFFER_COMPLETE:
+        return true;
+    }
+    return false;
+}
+#endif // defined(OVR_BUILD_DEBUG)
 
 RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams&)
   : Render::RenderDevice(hmd),
@@ -831,7 +868,7 @@ Texture* RenderDevice::GetDepthBuffer(int w, int h, int ms)
         if (w == DepthBuffers[i]->Width && h == DepthBuffers[i]->Height && ms == DepthBuffers[i]->GetSamples())
             return DepthBuffers[i];
 
-    Ptr<Texture> newDepth = *CreateTexture(Texture_Depth|Texture_RenderTarget|ms, w, h, NULL);
+    Ptr<Texture> newDepth = *CreateTexture(Texture_Depth32f|Texture_RenderTarget|ms, w, h, NULL);
     DepthBuffers.PushBack(newDepth);
     return newDepth.GetPtr();
 }
@@ -844,13 +881,12 @@ void RenderDevice::ResolveMsaa(OVR::Render::Texture* msaaTex, OVR::Render::Textu
                             isMsaaTarget ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D,
                             ((Texture*)msaaTex)->GetTexId(), 0);
     glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-    OVR_ASSERT(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    OVR_ASSERT(CheckFramebufferStatus(GL_READ_FRAMEBUFFER));
 
     glBindFramebuffer( GL_DRAW_FRAMEBUFFER, CurrentFbo );
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((Texture*)outputTex)->GetTexId(), 0);
     glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-
-    OVR_ASSERT(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    OVR_ASSERT(CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
 
     //glReadBuffer(GL_TEXTURE_2D_MULTISAMPLE);
     //glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -859,6 +895,27 @@ void RenderDevice::ResolveMsaa(OVR::Render::Texture* msaaTex, OVR::Render::Textu
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
     GLint err = glGetError();
     OVR_ASSERT_AND_UNUSED(!err, err);
+}
+
+void RenderDevice::SetCullMode(CullMode cullMode)
+{
+    switch (cullMode)
+    {
+    case OVR::Render::RenderDevice::Cull_Off:
+        glDisable(GL_CULL_FACE);
+        break;
+    case OVR::Render::RenderDevice::Cull_Back:
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CW);
+        break;
+    case OVR::Render::RenderDevice::Cull_Front:
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CCW);
+        break;
+    default:
+        OVR_FAIL();
+        break;
+    }
 }
 
 void RenderDevice::SetRenderTarget(Render::Texture* color, Render::Texture* depth, Render::Texture* stencil)
@@ -887,9 +944,12 @@ void RenderDevice::SetRenderTarget(Render::Texture* color, Render::Texture* dept
     else
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
 
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-        OVR_DEBUG_LOG(("framebuffer not complete: %x", status));
+    OVR_ASSERT(CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
+
+    if (color->GetFormat() & Texture_SRGB)
+        glEnable(GL_FRAMEBUFFER_SRGB);
+    else
+        glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
 
@@ -1044,14 +1104,6 @@ void RenderDevice::RenderWithAlpha(const Fill* fill, Render::Buffer* vertices, R
     //glEnable(GL_BLEND);
     Render(fill, vertices, indices, matrix, offset, count, rprim);
     //glDisable(GL_BLEND);
-}
-
-void RenderDevice::RenderCompute(const Fill* fill, Render::Buffer* buffer, int invocationSizeInPixels )
-{
-    OVR_UNUSED ( fill );
-    OVR_UNUSED ( buffer );
-    OVR_UNUSED ( invocationSizeInPixels );
-    OVR_ASSERT ( !"Compute shaders not implemented yet" );
 }
 
 void RenderDevice::SetLighting(const LightingParams* lt)
@@ -1294,7 +1346,16 @@ bool ShaderSet::SetUniform4x4f(const char* name, const Matrix4f& m)
     return 0;
 }
 
-Texture::Texture(ovrHmd hmd, RenderDevice* r, int w, int h, int samples) : Hmd(hmd), Ren(r), Width(w), Height(h), Samples(samples), TextureSet(nullptr), MirrorTexture(nullptr), TexId(0)
+Texture::Texture(ovrHmd hmd, RenderDevice* r, int fmt, int w, int h, int samples)
+    : Hmd(hmd)
+    , Ren(r)
+    , Format(fmt)
+    , Width(w)
+    , Height(h)
+    , Samples(samples)
+    , TextureSet(nullptr)
+    , MirrorTexture(nullptr)
+    , TexId(0)
 {
 }
 
@@ -1302,13 +1363,13 @@ Texture::~Texture()
 {
     if (TextureSet)
     {
-        ovrHmd_DestroySwapTextureSet(Hmd, TextureSet);
+        ovr_DestroySwapTextureSet(Hmd, TextureSet);
         TextureSet = nullptr;
     }
 
     if (MirrorTexture)
     {
-        ovrHmd_DestroyMirrorTexture(Hmd, MirrorTexture);
+        ovr_DestroyMirrorTexture(Hmd, MirrorTexture);
         MirrorTexture = nullptr;
     }
 }
@@ -1378,8 +1439,11 @@ ovrTexture Texture::Get_ovrTexture()
 }
 
 
-Texture* RenderDevice::CreateTexture(int format, int width, int height, const void* data, int mipcount)
+Texture* RenderDevice::CreateTexture(int format, int width, int height, const void* data, int mipcount, ovrResult* error)
 {
+    if (error != nullptr)
+        *error = ovrSuccess;
+
     static bool knownVendor = false;
     static const char* atiVendor = nullptr;
 
@@ -1398,16 +1462,22 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
     }
     bool furtherInitialization = true;
 
+    bool isDepth = ((format & Texture_DepthMask) != 0);
+    bool isSRGB = !isDepth && ((format & Texture_SRGB) != 0);
+
     GLenum   glformat, gltype = GL_UNSIGNED_BYTE;
     switch(format & Texture_TypeMask)
     {
-    case Texture_BGRA:  glformat = GL_BGRA; break;
-    case Texture_RGBA:  glformat = GL_RGBA; break;
-    case Texture_R:     glformat = GL_RED; break;
-    case Texture_Depth: glformat = GL_DEPTH_COMPONENT; gltype = GL_FLOAT; break;
-    case Texture_DXT1:  glformat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
-    case Texture_DXT3:  glformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
-    case Texture_DXT5:  glformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
+    case Texture_BGRA:              glformat = GL_BGRA; break;
+    case Texture_RGBA:              glformat = GL_RGBA; break;
+    case Texture_R:                 glformat = GL_RED; break;
+    case Texture_Depth32f:          glformat = GL_DEPTH_COMPONENT;     gltype = GL_FLOAT; break;
+    case Texture_Depth16:           OVR_ASSERT(false); /* untested */ glformat = GL_DEPTH_COMPONENT16;   gltype = GL_UNSIGNED_SHORT; break;
+    case Texture_Depth24Stencil8:   OVR_ASSERT(false); /* untested */ glformat = GL_DEPTH24_STENCIL8;    gltype = GL_UNSIGNED_INT; break;
+    case Texture_Depth32fStencil8:  OVR_ASSERT(false); /* untested */ glformat = GL_DEPTH32F_STENCIL8;   gltype = GL_FLOAT; break;
+    case Texture_DXT1:              glformat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT; break;
+    case Texture_DXT3:              glformat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT : GL_COMPRESSED_RGBA_S3TC_DXT3_EXT; break;
+    case Texture_DXT5:              glformat = isSRGB ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT; break;
     default:
         return NULL;
     }
@@ -1419,7 +1489,7 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
 
     GLenum textureTarget = (samples > 1) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
-    Texture* NewTex = new Texture(Hmd, this, width, height, samples);
+    Texture* NewTex = new Texture(Hmd, this, format, width, height, samples);
 
     if (format & Texture_Compressed)
     {
@@ -1473,13 +1543,21 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
     }
     else
     {
-        bool isSRGB = ((format & Texture_TypeMask) == Texture_RGBA && (format & Texture_SRGB) != 0);
-        bool isDepth = ((format & Texture_Depth) != 0);
-        GLenum internalFormat = (isSRGB) ? GL_SRGB8_ALPHA8 : (isDepth) ? (GLE_ARB_depth_buffer_float ? GL_DEPTH_COMPONENT32F : GL_DEPTH_COMPONENT) : glformat;
+        GLenum internalFormat = (isSRGB) ? GL_SRGB8_ALPHA8 : (isDepth) ?
+                                (GLE_ARB_depth_buffer_float ? GL_DEPTH_COMPONENT32F : GL_DEPTH_COMPONENT) : glformat;
 
         if (format & Texture_Mirror)
         {
-            ovrHmd_CreateMirrorTextureGL(Hmd, internalFormat, width, height, &NewTex->MirrorTexture);
+            ovrResult result = ovr_CreateMirrorTextureGL(Hmd, internalFormat, width, height, &NewTex->MirrorTexture);
+            if (error != nullptr)
+                *error = result;
+
+            if (result == ovrError_DisplayLost || !NewTex->MirrorTexture)
+            {
+                OVR_ASSERT(false);
+                return nullptr;
+            }
+
             NewTex->TexId = ((ovrGLTexture*)NewTex->MirrorTexture)->OGL.TexId;
             furtherInitialization = false;
         }
@@ -1487,8 +1565,11 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
         {
             // Can do this with rendertargets, depth buffers, or normal textures, but *not* MSAA.
             OVR_ASSERT ( samples == 1);
-            ovrHmd_CreateSwapTextureSetGL(Hmd, internalFormat, width, height, &NewTex->TextureSet);
-            if (!NewTex->TextureSet)
+            ovrResult result = ovr_CreateSwapTextureSetGL(Hmd, internalFormat, width, height, &NewTex->TextureSet);
+            if (error != nullptr)
+                *error = result;
+
+            if (result == ovrError_DisplayLost || !NewTex->TextureSet)
             {
                 OVR_ASSERT(false);
                 return nullptr;
@@ -1543,17 +1624,73 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
             {
                 glBindTexture(textureTarget, textureId[i]);
 
+                // For DX interop textures glTexImage2D needs to be called on AMD hardware. The data parameter
+                // is not honored however, so we will need to initialize it with data later.
                 if (furtherInitialization || atiVendor)
                 {
                     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, glformat, gltype, data);
                 }
-                else if (data)
+
+                // For Nvidia, glTexImage2D cannot be called or an error will be thrown. Instead we initialize
+                // data with glTexSubImage2D which on Nvidia works fine. This call on AMD locks up machines
+                // hard, so we have to use glBlitFramebuffer from a non-shared texture to do the update.
+                if ((format & Texture_SwapTextureSet) && data)
                 {
-                    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glformat, gltype, data);
+                    if (!atiVendor)
+                    {
+                        // NVIDIA path
+                        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, glformat, gltype, data);
+                    }
+                    else
+                    {
+                        // AMD path
+                        GLuint fb[2];
+                        GLuint tex;
+
+                        // Save relevant state.
+                        GLint readFrameBufferBindingSaved, drawBufferBindingSaved;
+                        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFrameBufferBindingSaved);
+                        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawBufferBindingSaved);
+
+                        GLint readBufferSaved;
+                        glGetIntegerv(GL_READ_BUFFER, &readBufferSaved);
+
+                        // Generate temporary texture and fbs
+                        glGenTextures(1, &tex);
+                        glGenFramebuffers(2, fb);
+
+                        // Create temporary texture initialized with our data and bind it to a framebuffer
+                        glBindTexture(GL_TEXTURE_2D, tex);
+                        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, glformat, gltype, data);
+                        glBindFramebuffer(GL_FRAMEBUFFER, fb[0]);
+                        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+                        OVR_ASSERT(CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
+
+                        // Bind our shared texture to another frame buffer
+                        glBindFramebuffer(GL_FRAMEBUFFER, fb[1]);
+                        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureId[i], 0);
+                        glDrawBuffer(GL_COLOR_ATTACHMENT0);
+                        OVR_ASSERT(CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER));
+
+                        // Do blit
+                        glBindFramebuffer(GL_READ_FRAMEBUFFER, fb[0]);
+                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fb[1]);
+                        glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                        OVR_ASSERT(!glGetError());
+
+                        // Clean up
+                        glDeleteFramebuffers(2, fb);
+                        glDeleteTextures(1, &tex);
+
+                        // Restore state
+                        glReadBuffer(readBufferSaved);
+                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawBufferBindingSaved);
+                        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFrameBufferBindingSaved);
+                    }
                 }
             }
 
-            delete textureId;
+            delete[] textureId;
         }
             
     }
@@ -1582,11 +1719,11 @@ Texture* RenderDevice::CreateTexture(int format, int width, int height, const vo
         } while (srcw > 1 || srch > 1);
         if (mipmaps)
             OVR_FREE(mipmaps);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, level);
+        glTexParameteri(textureTarget, GL_TEXTURE_MAX_LEVEL, level);
     }
     else if (furtherInitialization || atiVendor)
     {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipcount-1);
+        glTexParameteri(textureTarget, GL_TEXTURE_MAX_LEVEL, mipcount - 1);
     }
 
     OVR_ASSERT(!glGetError());

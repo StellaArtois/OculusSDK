@@ -45,7 +45,7 @@ public:
     virtual ~RenderDevice() { Shutdown(); }
 
     // Implement static initializer function to create this class.
-    static Render::RenderDevice* CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd);
+    static Render::RenderDevice* CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd, ovrGraphicsLuid luid);
 	
     virtual void Shutdown();
     virtual void Present(bool withVsync);

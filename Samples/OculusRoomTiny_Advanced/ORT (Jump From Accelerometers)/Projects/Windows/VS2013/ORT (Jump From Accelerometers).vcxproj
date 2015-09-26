@@ -25,7 +25,7 @@
     <ProjectGuid>{BCC0D368-4C02-46F0-81F7-62672155CFAC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Jump From Accelerometers)</ProjectName>
+    <ProjectName>Jump From Accelerometers</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

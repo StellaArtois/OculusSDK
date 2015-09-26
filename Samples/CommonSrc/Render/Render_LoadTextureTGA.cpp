@@ -26,8 +26,15 @@ limitations under the License.
 
 namespace OVR { namespace Render {
 
-Texture* LoadTextureTgaEitherWay(RenderDevice* ren, File* f, unsigned char alpha, bool generatePremultAlpha, bool bottomUp, bool createSwapTextureSet)
+Texture* LoadTextureTgaEitherWay(RenderDevice* ren, File* f, int textureLoadFlags, unsigned char alpha, bool bottomUp)
 {
+    OVR_ASSERT(textureLoadFlags != 255); // probably means an older style call is being made
+
+    bool srgbAware = (textureLoadFlags & TextureLoad_SrgbAware) != 0;
+    bool anisotropic = (textureLoadFlags & TextureLoad_Anisotropic) != 0;
+    bool generatePremultAlpha = (textureLoadFlags & TextureLoad_MakePremultAlpha) != 0;
+    bool createSwapTextureSet = (textureLoadFlags & TextureLoad_SwapTextureSet) != 0;
+
     f->SeekToBegin();
 
     if ( f->GetLength() == 0 )
@@ -155,26 +162,37 @@ Texture* LoadTextureTgaEitherWay(RenderDevice* ren, File* f, unsigned char alpha
         format |= Texture_SwapTextureSet;
     }
 
+    // TODO: This should just be a suggestion. In theory we should use a property set by the texture to actually
+    // create an sRGB texture, and not do it all the time
+    if (srgbAware)
+    {
+        format |= Texture_SRGB;
+    }
+
     Texture* out = ren->CreateTexture(format, width, height, imgdata);
 
     // check for clamp based on texture name
     if(strstr(f->GetFilePath(), "_c."))
     {
-        out->SetSampleMode(Sample_Clamp);
+        out->SetSampleMode(Sample_Clamp | (anisotropic ? Sample_Anisotropic : 0));
+    }
+    else if(anisotropic)
+    {
+        out->SetSampleMode((anisotropic ? Sample_Anisotropic : 0));
     }
 
     OVR_FREE(imgdata);
     return out;
 }
 
-Texture* LoadTextureTgaTopDown(RenderDevice* ren, File* f, unsigned char alpha, bool generatePremultAlpha, bool createSwapTextureSet)
+Texture* LoadTextureTgaTopDown(RenderDevice* ren, File* f, int textureLoadFlags, unsigned char alpha)
 {
-    return LoadTextureTgaEitherWay ( ren, f, alpha, generatePremultAlpha, false, createSwapTextureSet );
+    return LoadTextureTgaEitherWay(ren, f, textureLoadFlags, alpha, false);
 }
 
-Texture* LoadTextureTgaBottomUp(RenderDevice* ren, File* f, unsigned char alpha, bool generatePremultAlpha, bool createSwapTextureSet)
+Texture* LoadTextureTgaBottomUp(RenderDevice* ren, File* f, int textureLoadFlags, unsigned char alpha)
 {
-    return LoadTextureTgaEitherWay ( ren, f, alpha, generatePremultAlpha, true, createSwapTextureSet );
+    return LoadTextureTgaEitherWay(ren, f, textureLoadFlags, alpha, true);
 }
 
 

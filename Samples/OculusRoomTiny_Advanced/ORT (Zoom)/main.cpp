@@ -25,8 +25,8 @@ limitations under the License.
 /// screen - once it gets big enough, the effect is very nauseous.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -35,17 +35,17 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
     basicVR.Layer[0] = new VRLayer(basicVR.HMD);
 
     // Make a texture to render the zoomed image into.  Make it same size as left eye buffer, for simplicity.
-    Texture zoomedTexture(true, Sizei(max(basicVR.Layer[0]->pEyeRenderTexture[0]->Size.w, basicVR.Layer[0]->pEyeRenderTexture[1]->Size.w),
-                                      max(basicVR.Layer[0]->pEyeRenderTexture[0]->Size.h, basicVR.Layer[0]->pEyeRenderTexture[1]->Size.h)));
+    Texture zoomedTexture(true, max(basicVR.Layer[0]->pEyeRenderTexture[0]->SizeW, basicVR.Layer[0]->pEyeRenderTexture[1]->SizeW),
+                                max(basicVR.Layer[0]->pEyeRenderTexture[0]->SizeH, basicVR.Layer[0]->pEyeRenderTexture[1]->SizeH));
 
     // Make a scope model - its small and close to us
     float scopeScale = 0.25f;
     TriangleSet cube;
-    cube.AddQuad(Vertex(Vector3f( scopeScale,  scopeScale, 0), 0xffffffff, 0, 0),
-                 Vertex(Vector3f(-scopeScale,  scopeScale, 0), 0xffffffff, 1, 0),
-                 Vertex(Vector3f( scopeScale, -scopeScale, 0), 0xffffffff, 0, 1),
-                 Vertex(Vector3f(-scopeScale, -scopeScale, 0), 0xffffffff, 1, 1));
-    Model * sniperModel = new Model(&cube, Vector3f(0, 0, 0), new Material(&zoomedTexture));
+    cube.AddQuad(Vertex(XMFLOAT3( scopeScale,  scopeScale, 0), 0xffffffff, 0, 0),
+                 Vertex(XMFLOAT3(-scopeScale,  scopeScale, 0), 0xffffffff, 1, 0),
+                 Vertex(XMFLOAT3( scopeScale, -scopeScale, 0), 0xffffffff, 0, 1),
+                 Vertex(XMFLOAT3(-scopeScale, -scopeScale, 0), 0xffffffff, 1, 1));
+	Model sniperModel(&cube, XMFLOAT3(0, 0, 0), XMFLOAT4(0, 0, 0, 1), new Material(&zoomedTexture));
 
     // Main loop
     while (basicVR.HandleMessages())
@@ -58,15 +58,19 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 
         // Lets set a slightly small viewport, so we get a black border
         int blackBorder = 16;
-        DIRECTX.SetViewport(Recti(basicVR.Layer[0]->EyeRenderViewport[0].Pos.x + blackBorder,
-            basicVR.Layer[0]->EyeRenderViewport[0].Pos.y + blackBorder,
-            basicVR.Layer[0]->EyeRenderViewport[0].Size.w - 2*blackBorder,
-            basicVR.Layer[0]->EyeRenderViewport[0].Size.h - 2*blackBorder));
+        DIRECTX.SetViewport((float)basicVR.Layer[0]->EyeRenderViewport[0].Pos.x + blackBorder,
+                            (float)basicVR.Layer[0]->EyeRenderViewport[0].Pos.y + blackBorder,
+                            (float)basicVR.Layer[0]->EyeRenderViewport[0].Size.w - 2*blackBorder,
+                            (float)basicVR.Layer[0]->EyeRenderViewport[0].Size.h - 2*blackBorder);
     
+		//Get the pose information in XM format
+		XMVECTOR eyeQuat = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Orientation);
+		XMVECTOR eyePos  = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Position);
+
         // Get view and projection matrices for the Rift camera
-        Camera finalCam(basicVR.MainCam->Pos + basicVR.MainCam->Rot.Transform(basicVR.Layer[0]->EyeRenderPose[0].Position),
-                        basicVR.MainCam->Rot * Matrix4f(basicVR.Layer[0]->EyeRenderPose[0].Orientation));
-        Matrix4f view = finalCam.GetViewMatrix();
+		XMVECTOR CombinedPos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(eyePos, basicVR.MainCam.Rot));
+		Camera finalCam(&CombinedPos, &(XMQuaternionMultiply(eyeQuat, basicVR.MainCam.Rot)));
+        XMMATRIX view = finalCam.GetViewMatrix();
 
         // Vary amount of zoom with '1' and '2'Lets pick a zoomed in FOV
         static float amountOfZoom = 0.1f;
@@ -76,23 +80,24 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         zoomedFOV.DownTan = zoomedFOV.UpTan = zoomedFOV.LeftTan = zoomedFOV.RightTan = amountOfZoom;
 
         // Finally, render zoomed scene onto the texture
-        Matrix4f proj = ovrMatrix4f_Projection(zoomedFOV, 0.2f, 1000.0f, ovrProjection_RightHanded);
-        Matrix4f projView = proj*view;
-        basicVR.pRoomScene->Render(proj*view, 1, 1, 1, 1, true);
+        XMMATRIX proj = ConvertToXM(ovrMatrix4f_Projection(zoomedFOV, 0.2f, 1000.0f, ovrProjection_RightHanded));
+        XMMATRIX projView = XMMatrixMultiply(view,proj);
+        basicVR.RoomScene.Render(&projView, 1, 1, 1, 1, true);
 
         for (int eye = 0; eye < 2; eye++)
         {
             // Render main, outer world
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
 
             // Render scope with special static camera, always in front of us
             static float howFarAway = 0.75f;
             if (DIRECTX.Key['3']) howFarAway = max(howFarAway - 0.002f, 0.25f);
             if (DIRECTX.Key['4']) howFarAway = min(howFarAway + 0.002f, 1.00f);
-            Camera  StaticMainCam(Vector3f(0, 0, -howFarAway), Matrix4f::RotationY(3.14f));
-            Matrix4f view = StaticMainCam.GetViewMatrix();
-            Matrix4f proj = ovrMatrix4f_Projection(basicVR.Layer[0]->EyeRenderDesc[eye].Fov, 0.2f, 1000.0f, ovrProjection_RightHanded);
-            sniperModel->Render(proj*view, 1, 1, 1, 1, true);
+            Camera  StaticMainCam(&XMVectorSet(0, 0, -howFarAway,0), &XMQuaternionRotationRollPitchYaw(0,3.14f,0));
+            XMMATRIX view = StaticMainCam.GetViewMatrix();
+            XMMATRIX proj = ConvertToXM(ovrMatrix4f_Projection(basicVR.Layer[0]->EyeRenderDesc[eye].Fov, 0.2f, 1000.0f, ovrProjection_RightHanded));
+			XMMATRIX projView = XMMatrixMultiply(view, proj);
+			sniperModel.Render(&projView, 1, 1, 1, 1, true);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

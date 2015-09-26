@@ -35,6 +35,8 @@ limitations under the License.
 #include "OVR_Atomic.h"
 #include "OVR_Std.h"
 #include "OVR_Alg.h"
+#include <string>
+
 
 namespace OVR {
 
@@ -339,6 +341,10 @@ public:
     int CompareNoCase(const String& str) const
     {
         return CompareNoCase(GetData()->Data, str.ToCStr());
+    }
+    int CompareNoCaseStartsWith(const String& str) const
+    {
+        return CompareNoCase(GetData()->Data, str.ToCStr(), str.GetLength());
     }
 
     // Accesses raw bytes
@@ -653,6 +659,30 @@ protected:
     const char* pStr;
     size_t      Size;
 };
+
+
+
+// Convert a UTF8 OVR::String object to a wchar_t UCS (Unicode) std::basic_string object.
+// The C++11 Standard Library has similar functionality, but it's not supported by earlier 
+// versions of Visual Studio. To consider: Add support for this when available.
+// length is the strlen of pUTF8. If not specified then it is calculated automatically.
+// Returns an empty string in the case that the UTF8 is malformed.
+std::wstring UTF8StringToUCSString(const char* pUTF8, size_t length = (size_t)-1);
+std::wstring UTF8StringToUCSString(const std::string& sUTF8);
+std::wstring OVRStringToUCSString(const OVR::String& sOVRUTF8);
+
+
+// Convert a wchar_t UCS (Unicode) std::basic_string object to a UTF8 std::basic_string object.
+// The C++11 Standard Library has similar functionality, but it's not supported by earlier 
+// versions of Visual Studio. To consider: Add support for this when available.
+// length is the strlen of pUCS. If not specified then it is calculated automatically.
+// Returns an empty string in the case that the UTF8 is malformed.
+std::string UCSStringToUTF8String(const wchar_t* pUCS, size_t length = (size_t)-1);
+std::string UCSStringToUTF8String(const std::wstring& sUCS);
+OVR::String UCSStringToOVRString(const wchar_t* pUCS, size_t length = (size_t)-1);
+OVR::String UCSStringToOVRString(const std::wstring& sUCS);
+
+
 
 } // OVR
 

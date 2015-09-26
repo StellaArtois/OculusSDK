@@ -42,13 +42,13 @@ struct AppRenderVR : BasicVR
             if (DistModel[eye]->IndexBuffer)  delete DistModel[eye]->IndexBuffer;
 
             ovrDistortionMesh meshData;
-            ovrHmd_CreateDistortionMeshDebug(HMD, (ovrEyeType)eye, EyeRenderDesc[eye].Fov,
+            ovr_CreateDistortionMeshDebug(HMD, (ovrEyeType)eye, EyeRenderDesc[eye].Fov,
                                              ovrDistortionCap_TimeWarp, &meshData, overrideEyeRelief);
             DistModel[eye]->VertexBuffer = new DataBuffer(DIRECTX.Device,D3D11_BIND_VERTEX_BUFFER, meshData.pVertexData,
                                                           sizeof(ovrDistortionVertex)*meshData.VertexCount);
             DistModel[eye]->IndexBuffer  = new DataBuffer(DIRECTX.Device,D3D11_BIND_INDEX_BUFFER, meshData.pIndexData,
                                                           sizeof(unsigned short)* meshData.IndexCount);
-            ovrHmd_DestroyDistortionMesh(&meshData);
+            ovr_DestroyDistortionMesh(&meshData);
         }
     }
 
@@ -110,7 +110,7 @@ struct AppRenderVR : BasicVR
         {
             Material * DistFill = new Material(pEyeRenderTexture[eye],0,VertexDesc,6,vShader,pShader,sizeof(ovrDistortionVertex));
             DistModel[eye]      = new Model(NULL,Vector3f(0,0,0),DistFill);
-            EyeRenderDesc[eye]  = ovrHmd_GetRenderDesc(HMD, (ovrEyeType)eye, HMD->DefaultEyeFov[eye]);
+            EyeRenderDesc[eye]  = ovr_GetRenderDesc(HMD, (ovrEyeType)eye, HMD->DefaultEyeFov[eye]);
         }
 
         MakeNewDistortionMeshes();
@@ -124,7 +124,7 @@ struct AppRenderVR : BasicVR
     void BeginFrame()
     {
         // Start timing
-        ovrHmd_BeginFrameTiming(HMD, 0); 
+        ovr_BeginFrameTiming(HMD, 0); 
     }
 
     //----------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ struct AppRenderVR : BasicVR
 
         // Render latency-tester square
         unsigned char latencyColor[3];
-        if (ovrHmd_GetLatencyTest2DrawColor(HMD, latencyColor))
+        if (ovr_GetLatencyTest2DrawColor(HMD, latencyColor))
         {
             pLatencyTestModel->Render(Matrix4f(),latencyColor[0]/255.0f, latencyColor[1]/ 255.0f, latencyColor[2]/255.0f, 1,true);
         }
@@ -152,7 +152,7 @@ struct AppRenderVR : BasicVR
         {
             // Get and set shader constants
             ovrVector2f UVScaleOffset[2];
-            ovrHmd_GetRenderScaleAndOffset(EyeRenderDesc[eye].Fov,
+            ovr_GetRenderScaleAndOffset(EyeRenderDesc[eye].Fov,
                                            useEyeTexture[eye]->Size, EyeRenderViewport[eye], UVScaleOffset);
             memcpy(DIRECTX.UniformData + 0,  UVScaleOffset, 16); // EyeToSourceUVScale + EyeToSourceUVOffset
         
@@ -164,7 +164,7 @@ struct AppRenderVR : BasicVR
             ovrPosef tempPose = useEyeRenderPose[eye];
             tempPose.Orientation = (Quatf)tempPose.Orientation * extraFromYawSinceRender.Inverted(); // The order of multiplication could be the reversed - insufficient use cases to confirm at this stage.
 
-            ovrHmd_GetEyeTimewarpMatricesDebug(HMD, (ovrEyeType)eye, tempPose, Quatf(), timeWarpMatrices, debugTimeAdjuster);
+            ovr_GetEyeTimewarpMatricesDebug(HMD, (ovrEyeType)eye, tempPose, Quatf(), timeWarpMatrices, debugTimeAdjuster);
             timeWarpMatrices[0] = ((Matrix4f)timeWarpMatrices[0]).Transposed();
             timeWarpMatrices[1] = ((Matrix4f)timeWarpMatrices[1]).Transposed();
             memcpy(DIRECTX.UniformData + 16,  timeWarpMatrices, 128); // Set Timewarp matrices shader constants
@@ -184,7 +184,7 @@ struct AppRenderVR : BasicVR
                 Util.WaitUntilGpuIdle();
         }
         Util.OutputFrameTime(ovr_GetTimeInSeconds());
-        ovrHmd_EndFrameTiming(HMD);
+        ovr_EndFrameTiming(HMD);
     }
 };
 

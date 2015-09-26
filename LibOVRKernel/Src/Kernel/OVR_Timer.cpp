@@ -62,8 +62,8 @@ extern "C" {
 namespace OVR {
 
 // For recorded data playback
-bool   Timer::useFakeSeconds = false;
-double Timer::FakeSeconds    = 0;
+bool   Timer::useVirtualSeconds = false;
+double Timer::VirtualSeconds    = 0.0;
 
 
 
@@ -390,20 +390,29 @@ uint64_t PerformanceTimer::GetTimeNanos()
 // Returns global high-resolution application timer in seconds.
 double Timer::GetSeconds()
 {
-	if(useFakeSeconds)
-		return FakeSeconds;
+    return Win32_PerfTimer.GetTimeSecondsDouble();
+}
+
+double Timer::GetVirtualSeconds()
+{
+    if (useVirtualSeconds)
+        return VirtualSeconds;
 
     return Win32_PerfTimer.GetTimeSecondsDouble();
 }
 
 
-
 // Delegate to PerformanceTimer.
+uint64_t Timer::GetVirtualTicksNanos()
+{
+    if (useVirtualSeconds)
+        return (uint64_t) (VirtualSeconds * NanosPerSecond);
+
+    return Win32_PerfTimer.GetTimeNanos();
+}
+
 uint64_t Timer::GetTicksNanos()
 {
-    if (useFakeSeconds)
-        return (uint64_t) (FakeSeconds * NanosPerSecond);
-
     return Win32_PerfTimer.GetTimeNanos();
 }
 

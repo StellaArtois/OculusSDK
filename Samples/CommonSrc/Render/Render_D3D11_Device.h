@@ -106,7 +106,6 @@ public:
     RenderDevice*     Ren;
     Ptr<ID3D11Buffer> D3DBuffer;
     Ptr<ID3D11ShaderResourceView> D3DSrv;
-    Ptr<ID3D11UnorderedAccessView> D3DUav;
     size_t            Size;
     int               Use;
     bool              Dynamic;
@@ -131,11 +130,6 @@ public:
         return D3DSrv;
     }
 
-    ID3D11UnorderedAccessView* GetUav()
-    {
-        return D3DUav;
-    }
-
     virtual size_t GetSize()
     {
         return Size;
@@ -151,7 +145,6 @@ class Texture : public Render::Texture
 public:
     ovrHmd                          Hmd;
     RenderDevice*                   Ren;
-    // TODO: Add UAV...
     ovrSwapTextureSet*              TextureSet;
     ovrTexture*                     MirrorTex;
     Ptr<ID3D11Texture2D>            Tex;
@@ -172,18 +165,10 @@ public:
     Ptr<ID3D11RenderTargetView> GetRtv() const { return TextureSet ? TexRtv[TextureSet->CurrentIndex] : TexRtv[0]; }
     Ptr<ID3D11DepthStencilView> GetDsv() const { return TextureSet ? TexDsv[TextureSet->CurrentIndex] : TexDsv[0]; }
 
-    virtual int GetWidth() const OVR_OVERRIDE
-    {
-        return Width;
-    }
-    virtual int GetHeight() const OVR_OVERRIDE
-    {
-        return Height;
-    }
-    virtual int GetSamples() const OVR_OVERRIDE
-    {
-        return Samples;
-    }
+    virtual int GetWidth() const OVR_OVERRIDE { return Width; }
+    virtual int GetHeight() const OVR_OVERRIDE { return Height; }
+    virtual int GetSamples() const OVR_OVERRIDE { return Samples; }
+    virtual int GetFormat() const OVR_OVERRIDE { return Format; }
 
     virtual void SetSampleMode(int sm) OVR_OVERRIDE;
 
@@ -213,10 +198,11 @@ public:
 
     Ptr<ID3D11Texture2D>            BackBuffer;
     Ptr<ID3D11RenderTargetView>     BackBufferRT;
-    Ptr<ID3D11UnorderedAccessView>  BackBufferUAV;
     Ptr<Texture>                    CurRenderTarget;
-    Ptr<Texture>                    CurDepthBuffer;
-    Ptr<ID3D11RasterizerState>      Rasterizer;
+    Ptr<Texture>                    CurDepthBuffer;    
+    Ptr<ID3D11RasterizerState>      RasterizerCullOff;
+    Ptr<ID3D11RasterizerState>      RasterizerCullBack;
+    Ptr<ID3D11RasterizerState>      RasterizerCullFront;
     Ptr<ID3D11BlendState>           BlendState;
     D3D11_VIEWPORT                  D3DViewport;
 
@@ -252,18 +238,19 @@ public:
     Array<Ptr<Texture> >     DepthBuffers;
     Ptr<D3DUtil::Blitter>    Blitter;
 
+    Ptr<ID3DUserDefinedAnnotation> UserAnnotation;  // for GPU profile markers
+
 public:
-    RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window);
+    RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window, ovrGraphicsLuid luid);
     ~RenderDevice();
 
     // Implement static initializer function to create this class.
-    static Render::RenderDevice* CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd);
+    static Render::RenderDevice* CreateDevice(ovrHmd hmd, const RendererParams& rp, void* oswnd, ovrGraphicsLuid luid);
 
     // Called to clear out texture fills by the app layer before it exits
     virtual void DeleteFills() OVR_OVERRIDE;
 
     virtual void SetViewport(const Recti& vp) OVR_OVERRIDE;
-    virtual void SetWindowSize(int w, int h) OVR_OVERRIDE;
     virtual bool SetParams(const RendererParams& newParams) OVR_OVERRIDE;
 
     virtual void Present(bool withVsync) OVR_OVERRIDE;
@@ -281,7 +268,7 @@ public:
     }
 
     virtual Buffer* CreateBuffer() OVR_OVERRIDE;
-    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1) OVR_OVERRIDE;
+    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr) OVR_OVERRIDE;
 
     static void GenerateSubresourceData(
         unsigned imageWidth, unsigned imageHeight, int format, unsigned imageDimUpperLimit,
@@ -289,9 +276,11 @@ public:
         D3D11_SUBRESOURCE_DATA* subresData,
         unsigned& largestMipWidth, unsigned& largestMipHeight, unsigned& byteSize, unsigned& effectiveMipCount);
 
-    Texture* GetDepthBuffer(int w, int h, int ms);
+    Texture* GetDepthBuffer(int w, int h, int ms, TextureFormat depthFormat);
 
     virtual void ResolveMsaa(Render::Texture* msaaTex, Render::Texture* outputTex) OVR_OVERRIDE;
+
+    virtual void SetCullMode(CullMode cullMode) OVR_OVERRIDE;
 
     virtual void BeginRendering() OVR_OVERRIDE;
     virtual void SetRenderTarget(Render::Texture* color,
@@ -317,7 +306,6 @@ public:
         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles, MeshType meshType = Mesh_Scene) OVR_OVERRIDE;
     virtual void RenderWithAlpha(const Fill* fill, Render::Buffer* vertices, Render::Buffer* indices,
         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles) OVR_OVERRIDE;
-    virtual void RenderCompute(const Fill* fill, Render::Buffer* buffer, int invocationSizeInPixels) OVR_OVERRIDE;
     virtual Fill *GetSimpleFill(int flags = Fill::F_Solid) OVR_OVERRIDE;
     virtual Fill *GetTextureFill(Render::Texture* tex, bool useAlpha = false, bool usePremult = false) OVR_OVERRIDE;
 

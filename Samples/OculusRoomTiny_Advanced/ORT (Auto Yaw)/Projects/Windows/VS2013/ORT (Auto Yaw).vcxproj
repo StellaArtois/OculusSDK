@@ -25,7 +25,7 @@
     <ProjectGuid>{6B179C5F-380E-47A5-8737-621D53912323}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Auto Yaw)</ProjectName>
+    <ProjectName>Auto Yaw</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -25,7 +25,7 @@
     <ProjectGuid>{179239D2-549C-4D4F-A100-0121E0932508}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Near Stereo, Far Mono)</ProjectName>
+    <ProjectName>Near Stereo Far Mono</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -6,7 +6,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\Include\OVR_CAPI_0_5_0.h">
+    <ClInclude Include="..\..\..\Include\OVR_CAPI_0_7_0.h">
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Include\OVR_CAPI_D3D.h">

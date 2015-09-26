@@ -29,37 +29,44 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"        // Basic VR
 
+struct FreezeTimewarp : BasicVR
+{
+    FreezeTimewarp(HINSTANCE hinst) : BasicVR(hinst, L"Freeze Timewarp") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+
+            // Don't update the basic eye poses if '1' or '2' are pressed.
+            // These same eye poses are then fed into the SDK, which 
+            // timewarps to the current view automatically.
+            if ((DIRECTX.Key['1'] == false)
+             && (DIRECTX.Key['2'] == false))
+                Layer[0]->GetEyePoses();
+
+            // If the eye poses aren't updated, you can opt t not render a new eye buffer
+            // so the SDK will continue with the old one.
+            if (DIRECTX.Key['2'] == false)
+            {
+		        for (int eye = 0; eye < 2; ++eye)
+		        {
+			        Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		        }
+            }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        // Don't update the basic eye poses if '1' or '2' are pressed.
-        // These same eye poses are then fed into the SDK, which 
-        // timewarps to the current view automatically.
-        if ((DIRECTX.Key['1'] == false)
-         && (DIRECTX.Key['2'] == false))
-            basicVR.Layer[0]->GetEyePoses();
-
-        // If the eye poses aren't updated, you can opt t not render a new eye buffer
-        // so the SDK will continue with the old one.
-        if (DIRECTX.Key['2'] == false)
-        {
-            for (int eye = 0; eye < 2; eye++)
-            {
-               basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-            }
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	FreezeTimewarp app(hinst);
+    return app.Run();
 }

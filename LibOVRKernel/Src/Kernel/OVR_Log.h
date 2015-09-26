@@ -56,6 +56,11 @@ enum LogLevel
     LogLevel_Error = 2
 };
 
+// System log channel name to use.  In Windows this will be the Application Event origin name.
+#ifndef OVR_SYSLOG_NAME
+#define OVR_SYSLOG_NAME L"OculusVR"
+#endif // OVR_SYSLOG_NAME
+
 // LogMessageType describes the type of the log message, controls when it is
 // displayed and what prefix/suffix is given to it. Messages are subdivided into
 // regular and debug logging types. Debug logging is only generated in debug builds.
@@ -131,10 +136,10 @@ public:
     static void     AddLogObserver(CallbackListener<LogHandler>* listener);
 
     // This is the same callback signature as in the CAPI.
-    typedef void (*CAPICallback)(int level, const char* message);
+    typedef void (*CAPICallback)(uintptr_t userData, int level, const char* message);
 
     // This function should be called before OVR::Initialize()
-    static void		SetCAPICallback(CAPICallback callback);
+    static void		SetCAPICallback(CAPICallback callback, uintptr_t userData);
 
 	// Internal
 	// Invokes observers, then calls LogMessageVarg()

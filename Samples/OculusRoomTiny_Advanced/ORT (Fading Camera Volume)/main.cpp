@@ -24,8 +24,8 @@ limitations under the License.
 /// to the main volume.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 #include "..\Common\Win32_CameraCone.h"     // Camera cone 
 
 //-------------------------------------------------------------------------------------
@@ -47,9 +47,9 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         // Now lets see how far off the volume we are
         // But we don't want our game position, we only want our rift generated position,
         // which we'll take as average of two positions.
-        Vector3f eye0 = (Vector3f) basicVR.Layer[0]->EyeRenderPose[0].Position;
-        Vector3f eye1 = (Vector3f) basicVR.Layer[0]->EyeRenderPose[1].Position;
-        float dist = cameraCone.DistToBoundary(((eye0+eye1)*0.5f),trackingState.CameraPose);
+		XMVECTOR eye0 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Position);
+		XMVECTOR eye1 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[1].Position);
+		float dist = cameraCone.DistToBoundary(XMVectorScale(XMVectorAdd(eye0, eye1), 0.5f), trackingState.CameraPose);
 
         // We want it to be full visible at dist of 0.2 and below, but not becoming completely invisible
         const float distFullVisible = 0.2f;
@@ -61,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
 
             // Lets clear the depth buffer, so we can see it clearly.
             // even if that means sorting over the top.

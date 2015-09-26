@@ -28,61 +28,61 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OculusRoomTiny (GL)", "..\.
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "g.  ORT (Adjust IPD)", "..\..\..\OculusRoomTiny_Advanced\ORT (Adjust IPD)\Projects\Windows\VS2013\ORT (Adjust IPD).vcxproj", "{FFEDA287-2581-4304-8896-8817B77FF51E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "g. Adjust IPD", "..\..\..\OculusRoomTiny_Advanced\ORT (Adjust IPD)\Projects\Windows\VS2013\ORT (Adjust IPD).vcxproj", "{FFEDA287-2581-4304-8896-8817B77FF51E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "b.  ORT (Freeze Timewarp)", "..\..\..\OculusRoomTiny_Advanced\ORT (Freeze Timewarp)\Projects\Win\VS2013\ORT (Freeze Timewarp).vcxproj", "{8EE1B393-BE3C-4ADD-8D4C-021A8D24CB29}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "b. Freeze Timewarp", "..\..\..\OculusRoomTiny_Advanced\ORT (Freeze Timewarp)\Projects\Win\VS2013\ORT (Freeze Timewarp).vcxproj", "{8EE1B393-BE3C-4ADD-8D4C-021A8D24CB29}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "i.  ORT (Matching Alternate Eye)", "..\..\..\OculusRoomTiny_Advanced\ORT (Matching Alternate Eye)\Projects\Windows\VS2013\ORT (Matching Alternate Eye).vcxproj", "{AC3105E0-8044-4A09-8F67-05D95F4E4E86}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "i. Matching Alternate Eye", "..\..\..\OculusRoomTiny_Advanced\ORT (Matching Alternate Eye)\Projects\Windows\VS2013\ORT (Matching Alternate Eye).vcxproj", "{AC3105E0-8044-4A09-8F67-05D95F4E4E86}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "j.  ORT (Monoscopic)", "..\..\..\OculusRoomTiny_Advanced\ORT (Monoscopic)\Projects\Windows\VS2013\ORT (Monoscopic).vcxproj", "{7DE5DB57-0B1E-4335-BC19-8A37A7173FE1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "j. Monoscopic", "..\..\..\OculusRoomTiny_Advanced\ORT (Monoscopic)\Projects\Windows\VS2013\ORT (Monoscopic).vcxproj", "{7DE5DB57-0B1E-4335-BC19-8A37A7173FE1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "h.  ORT (Recenter Pose)", "..\..\..\OculusRoomTiny_Advanced\ORT (Recenter Pose)\Projects\Windows\VS2013\ORT (Recenter Pose).vcxproj", "{F223272D-69F7-4373-8988-82A37F4D2C46}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "h. Recenter Pose", "..\..\..\OculusRoomTiny_Advanced\ORT (Recenter Pose)\Projects\Windows\VS2013\ORT (Recenter Pose).vcxproj", "{F223272D-69F7-4373-8988-82A37F4D2C46}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "a.  ORT (Using BasicVR)", "..\..\..\OculusRoomTiny_Advanced\ORT (Using BasicVR)\Projects\Win\VS2013\ORT (Using BasicVR).vcxproj", "{3EE2D7FD-3812-4C2F-A0EE-2A07EC1629DD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "a. Using BasicVR", "..\..\..\OculusRoomTiny_Advanced\ORT (Using BasicVR)\Projects\Win\VS2013\ORT (Using BasicVR).vcxproj", "{3EE2D7FD-3812-4C2F-A0EE-2A07EC1629DD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "f.  ORT (Vary Fov)", "..\..\..\OculusRoomTiny_Advanced\ORT (Vary Fov)\Projects\Windows\VS2013\ORT (Vary FOV).vcxproj", "{5EF13C2A-C63F-4015-B9FD-2BA87073450E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "f. Vary Fov", "..\..\..\OculusRoomTiny_Advanced\ORT (Vary Fov)\Projects\Windows\VS2013\ORT (Vary FOV).vcxproj", "{5EF13C2A-C63F-4015-B9FD-2BA87073450E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "e.  ORT (Vary Resolution)", "..\..\..\OculusRoomTiny_Advanced\ORT (Vary Resolution)\Projects\Windows\VS2013\ORT (Vary Resolution).vcxproj", "{BB250AC1-25E6-485D-901E-1742EA6FA70A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "e. Vary Resolution", "..\..\..\OculusRoomTiny_Advanced\ORT (Vary Resolution)\Projects\Windows\VS2013\ORT (Vary Resolution).vcxproj", "{BB250AC1-25E6-485D-901E-1742EA6FA70A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "d.  ORT (World Scaling)", "..\..\..\OculusRoomTiny_Advanced\ORT (World Scaling)\Projects\Windows\VS2013\ORT (World Scaling).vcxproj", "{09E2164C-536E-4CEE-B21F-9214B0C15B19}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "d. World Scaling", "..\..\..\OculusRoomTiny_Advanced\ORT (World Scaling)\Projects\Windows\VS2013\ORT (World Scaling).vcxproj", "{09E2164C-536E-4CEE-B21F-9214B0C15B19}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c.  ORT (Simple Alternate Eye)", "..\..\..\OculusRoomTiny_Advanced\ORT (Simple Alternate Eye)\Projects\Windows\VS2013\ORT (Simple Alternate Eye).vcxproj", "{B731E0A0-C14B-4C9F-9454-17EC77594243}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "c. Simple Alternate Eye", "..\..\..\OculusRoomTiny_Advanced\ORT (Simple Alternate Eye)\Projects\Windows\VS2013\ORT (Simple Alternate Eye).vcxproj", "{B731E0A0-C14B-4C9F-9454-17EC77594243}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
@@ -94,13 +94,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OculusWorldDemo", "..\..\..
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "l.  ORT (Layers)", "..\..\..\OculusRoomTiny_Advanced\ORT (Layers)\Projects\Windows\VS2013\ORT (Layers).vcxproj", "{78064B3F-29D7-4F6A-88E0-C710E0F5ECF6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "l. Layers", "..\..\..\OculusRoomTiny_Advanced\ORT (Layers)\Projects\Windows\VS2013\ORT (Layers).vcxproj", "{78064B3F-29D7-4F6A-88E0-C710E0F5ECF6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "m.  ORT (Camera Volume)", "..\..\..\OculusRoomTiny_Advanced\ORT (Camera Volume)\Projects\Windows\VS2013\ORT (Camera Volume).vcxproj", "{B9A38497-DA0C-44F4-874A-7EFB4C1BD098}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "m. Camera Volume", "..\..\..\OculusRoomTiny_Advanced\ORT (Camera Volume)\Projects\Windows\VS2013\ORT (Camera Volume).vcxproj", "{B9A38497-DA0C-44F4-874A-7EFB4C1BD098}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
@@ -108,115 +108,115 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "m.  ORT (Camera Volume)", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OculusRoomTiny (Experimental)", "OculusRoomTiny (Experimental)", "{95ABFAF3-B682-45EF-9C62-D05BDB612824}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Auto Linear Velocity)", "..\..\..\OculusRoomTiny_Advanced\ORT (Auto Linear Velocity)\Projects\Windows\VS2013\ORT (Auto Linear Velocity).vcxproj", "{F7E01007-D32F-4457-929D-92CB9FBEFA17}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Auto Linear Velocity", "..\..\..\OculusRoomTiny_Advanced\ORT (Auto Linear Velocity)\Projects\Windows\VS2013\ORT (Auto Linear Velocity).vcxproj", "{F7E01007-D32F-4457-929D-92CB9FBEFA17}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Auto Yaw)", "..\..\..\OculusRoomTiny_Advanced\ORT (Auto Yaw)\Projects\Windows\VS2013\ORT (Auto Yaw).vcxproj", "{6B179C5F-380E-47A5-8737-621D53912323}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Auto Yaw", "..\..\..\OculusRoomTiny_Advanced\ORT (Auto Yaw)\Projects\Windows\VS2013\ORT (Auto Yaw).vcxproj", "{6B179C5F-380E-47A5-8737-621D53912323}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Black Outside Volume)", "..\..\..\OculusRoomTiny_Advanced\ORT (Black Outside Volume)\Projects\Windows\VS2013\ORT (Black Outside Volume).vcxproj", "{104D89C1-5E6E-4EDC-95F1-D82F13C38980}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Black Outside Volume", "..\..\..\OculusRoomTiny_Advanced\ORT (Black Outside Volume)\Projects\Windows\VS2013\ORT (Black Outside Volume).vcxproj", "{104D89C1-5E6E-4EDC-95F1-D82F13C38980}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Blank Frames)", "..\..\..\OculusRoomTiny_Advanced\ORT (Blank Frames)\Projects\Windows\VS2013\ORT (Blank Frames).vcxproj", "{433E9F4F-37BA-44F6-8EF7-B40E7BD9F631}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Blank Frames", "..\..\..\OculusRoomTiny_Advanced\ORT (Blank Frames)\Projects\Windows\VS2013\ORT (Blank Frames).vcxproj", "{433E9F4F-37BA-44F6-8EF7-B40E7BD9F631}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Cockpit, Mono Exterior)", "..\..\..\OculusRoomTiny_Advanced\ORT (Cockpit, Mono Exterior)\Projects\Windows\VS2013\ORT (Cockpit, Mono Exterior).vcxproj", "{2B93C6C1-CDE7-4AC0-A25D-036855AB2CF4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cockpit Mono Exterior", "..\..\..\OculusRoomTiny_Advanced\ORT (Cockpit, Mono Exterior)\Projects\Windows\VS2013\ORT (Cockpit, Mono Exterior).vcxproj", "{2B93C6C1-CDE7-4AC0-A25D-036855AB2CF4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Control Combination)", "..\..\..\OculusRoomTiny_Advanced\ORT (Control Combination)\Projects\Windows\VS2013\ORT (Control Combination).vcxproj", "{7CF66236-87EA-4B00-A335-491B72AE2C5B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Control Combination", "..\..\..\OculusRoomTiny_Advanced\ORT (Control Combination)\Projects\Windows\VS2013\ORT (Control Combination).vcxproj", "{7CF66236-87EA-4B00-A335-491B72AE2C5B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Fading Camera Volume)", "..\..\..\OculusRoomTiny_Advanced\ORT (Fading Camera Volume)\Projects\Windows\VS2013\ORT (Fading Camera Volume).vcxproj", "{B015D991-697A-4BF8-97F1-6D5F9BDBF68E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Fading Camera Volume", "..\..\..\OculusRoomTiny_Advanced\ORT (Fading Camera Volume)\Projects\Windows\VS2013\ORT (Fading Camera Volume).vcxproj", "{B015D991-697A-4BF8-97F1-6D5F9BDBF68E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Jump From Accelerometers)", "..\..\..\OculusRoomTiny_Advanced\ORT (Jump From Accelerometers)\Projects\Windows\VS2013\ORT (Jump From Accelerometers).vcxproj", "{BCC0D368-4C02-46F0-81F7-62672155CFAC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Jump From Accelerometers", "..\..\..\OculusRoomTiny_Advanced\ORT (Jump From Accelerometers)\Projects\Windows\VS2013\ORT (Jump From Accelerometers).vcxproj", "{BCC0D368-4C02-46F0-81F7-62672155CFAC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Mid Mono, Exaggerate Far)", "..\..\..\OculusRoomTiny_Advanced\ORT (Mid Mono, Exaggerate Far)\Projects\Windows\VS2013\ORT (Mid Mono, Exaggerate Far).vcxproj", "{0018B901-D50B-4D4E-84FB-620D313133F7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mid Mono Exaggerate Far)", "..\..\..\OculusRoomTiny_Advanced\ORT (Mid Mono, Exaggerate Far)\Projects\Windows\VS2013\ORT (Mid Mono, Exaggerate Far).vcxproj", "{0018B901-D50B-4D4E-84FB-620D313133F7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Motion In Look Direction)", "..\..\..\OculusRoomTiny_Advanced\ORT (Motion In Look Direction)\Projects\Windows\VS2013\ORT (Motion In Look Direction).vcxproj", "{0D5FB298-E545-4F38-BF63-079EAC636FAF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Motion In Look Direction", "..\..\..\OculusRoomTiny_Advanced\ORT (Motion In Look Direction)\Projects\Windows\VS2013\ORT (Motion In Look Direction).vcxproj", "{0D5FB298-E545-4F38-BF63-079EAC636FAF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Near Stereo, Far Mono)", "..\..\..\OculusRoomTiny_Advanced\ORT (Near Stereo, Far Mono)\Projects\Windows\VS2013\ORT (Near Stereo, Far Mono).vcxproj", "{179239D2-549C-4D4F-A100-0121E0932508}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Near Stereo Far Mono", "..\..\..\OculusRoomTiny_Advanced\ORT (Near Stereo, Far Mono)\Projects\Windows\VS2013\ORT (Near Stereo, Far Mono).vcxproj", "{179239D2-549C-4D4F-A100-0121E0932508}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Quantized Yaw)", "..\..\..\OculusRoomTiny_Advanced\ORT (Quantized Yaw)\Projects\Windows\VS2013\ORT (Quantized Yaw).vcxproj", "{797EEDC4-4A71-4CFB-9F46-340582DE2BFD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Quantized Yaw", "..\..\..\OculusRoomTiny_Advanced\ORT (Quantized Yaw)\Projects\Windows\VS2013\ORT (Quantized Yaw).vcxproj", "{797EEDC4-4A71-4CFB-9F46-340582DE2BFD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Remapped Keys)", "..\..\..\OculusRoomTiny_Advanced\ORT (Remapped Keys)\Projects\Win\VS2013\ORT (Remapped Keys).vcxproj", "{F6EAB2BA-9BE3-449B-929C-DEBB4509B343}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Remapped Keys", "..\..\..\OculusRoomTiny_Advanced\ORT (Remapped Keys)\Projects\Win\VS2013\ORT (Remapped Keys).vcxproj", "{F6EAB2BA-9BE3-449B-929C-DEBB4509B343}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Smooth Quantized Yaw)", "..\..\..\OculusRoomTiny_Advanced\ORT (Smooth Quantized Yaw)\Projects\Windows\VS2013\ORT (Smooth Quantized Yaw).vcxproj", "{9F70C17D-9BB8-4FB7-A47E-2E35964AE209}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Smooth Quantized Yaw", "..\..\..\OculusRoomTiny_Advanced\ORT (Smooth Quantized Yaw)\Projects\Windows\VS2013\ORT (Smooth Quantized Yaw).vcxproj", "{9F70C17D-9BB8-4FB7-A47E-2E35964AE209}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Static Background)", "..\..\..\OculusRoomTiny_Advanced\ORT (Static Background)\Projects\Windows\VS2013\ORT (Static Background).vcxproj", "{D2EC8E8D-2051-4E51-9829-559631D8C15C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Static Background", "..\..\..\OculusRoomTiny_Advanced\ORT (Static Background)\Projects\Windows\VS2013\ORT (Static Background).vcxproj", "{D2EC8E8D-2051-4E51-9829-559631D8C15C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Tap Detection)", "..\..\..\OculusRoomTiny_Advanced\ORT (Tap Detection)\Projects\Windows\VS2013\ORT (Tap Detection).vcxproj", "{0AE5DD88-2099-4E75-B8ED-E5EFB6A944A0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tap Detection", "..\..\..\OculusRoomTiny_Advanced\ORT (Tap Detection)\Projects\Windows\VS2013\ORT (Tap Detection).vcxproj", "{0AE5DD88-2099-4E75-B8ED-E5EFB6A944A0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Tilt Controlled Locked Rift)", "..\..\..\OculusRoomTiny_Advanced\ORT (Tilt Controlled Locked)\Projects\Windows\VS2013\ORT (Tilt Controlled Locked).vcxproj", "{F3E8CC0C-6A40-45D2-B0B4-53EBACB332B3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tilt Controlled Locked Rift", "..\..\..\OculusRoomTiny_Advanced\ORT (Tilt Controlled Locked)\Projects\Windows\VS2013\ORT (Tilt Controlled Locked).vcxproj", "{F3E8CC0C-6A40-45D2-B0B4-53EBACB332B3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Tilt Controlled)", "..\..\..\OculusRoomTiny_Advanced\ORT (Tilt Controlled)\Projects\Windows\VS2013\ORT (Tilt Controlled).vcxproj", "{0B91311A-4274-4043-A92D-A0395475ED76}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tilt Controlled", "..\..\..\OculusRoomTiny_Advanced\ORT (Tilt Controlled)\Projects\Windows\VS2013\ORT (Tilt Controlled).vcxproj", "{0B91311A-4274-4043-A92D-A0395475ED76}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ORT (Zoom for IO)", "..\..\..\OculusRoomTiny_Advanced\ORT (Zoom)\Projects\Win\VS2013\ORT (Zoom).vcxproj", "{45B9121F-C8E4-4A3E-887B-7C9140533ACE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Zoom for IO", "..\..\..\OculusRoomTiny_Advanced\ORT (Zoom)\Projects\Win\VS2013\ORT (Zoom).vcxproj", "{45B9121F-C8E4-4A3E-887B-7C9140533ACE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
@@ -230,13 +230,55 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{5F6DC4
 		..\..\..\OculusRoomTiny_Advanced\Common\Win32_DirectXAppUtil.h = ..\..\..\OculusRoomTiny_Advanced\Common\Win32_DirectXAppUtil.h
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "k.  ORT (MSAA)", "..\..\..\OculusRoomTiny_Advanced\ORT (MSAA)\Projects\Win\VS2013\ORT (MSAA).vcxproj", "{46FFA3FD-06BC-4E92-A7DD-26F845085D30}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "k. MSAA", "..\..\..\OculusRoomTiny_Advanced\ORT (MSAA)\Projects\Win\VS2013\ORT (MSAA).vcxproj", "{46FFA3FD-06BC-4E92-A7DD-26F845085D30}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "n.  ORT (Engine Integration Stages)", "..\..\..\OculusRoomTiny_Advanced\ORT (Engine Integration Stages)\Projects\Windows\VS2013\ORT (Engine Integration Stages).vcxproj", "{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "n. Engine Integration", "..\..\..\OculusRoomTiny_Advanced\ORT (Engine Integration Stages)\Projects\Windows\VS2013\ORT (Engine Integration Stages).vcxproj", "{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "o. Performance HUD", "..\..\..\OculusRoomTiny_Advanced\ORT (Performance HUD)\Projects\Win\VS2013\ORT (Performance HUD).vcxproj", "{A09544B4-ED8F-4C69-87A6-1E753663974E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "p. Direct Quad", "..\..\..\OculusRoomTiny_Advanced\ORT (Direct Quad)\Projects\Win\VS2013\ORT (Direct Quad).vcxproj", "{A994655E-B849-43A7-88BD-B49E3A94C80E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "q. Queue Ahead", "..\..\..\OculusRoomTiny_Advanced\ORT (Queue Ahead)\Projects\Win\VS2013\ORT (Queue Ahead).vcxproj", "{FEBD661E-2536-4334-8807-FD816F708D8F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "r. Mirror Variants", "..\..\..\OculusRoomTiny_Advanced\ORT (Mirror Variants)\Projects\Win\VS2013\ORT (Mirror Variants).vcxproj", "{7CC337BF-69CC-416A-9899-508534A3080F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Super Minimal", "..\..\..\OculusRoomTiny_Advanced\ORT (Super Minimal)\Projects\Win\VS2013\ORT (Super Minimal).vcxproj", "{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "s. Debug HUD", "..\..\..\OculusRoomTiny_Advanced\ORT (Debug HUD)\Projects\Win\VS2013\ORT (Debug HUD).vcxproj", "{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
+		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "t. Controllers", "..\..\..\OculusRoomTiny_Advanced\ORT (Controllers)\Projects\Win\VS2013\ORT (Controllers).vcxproj", "{8797E00F-8060-41A6-9D14-C53AD17AEA6A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA50E705-5113-49E5-B105-2512EDC8DDC6} = {EA50E705-5113-49E5-B105-2512EDC8DDC6}
 		{29FA0962-DDC6-4F72-9D12-E150DF29E279} = {29FA0962-DDC6-4F72-9D12-E150DF29E279}
@@ -554,6 +596,62 @@ Global
 		{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86}.Release|Win32.Build.0 = Release|Win32
 		{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86}.Release|x64.ActiveCfg = Release|x64
 		{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86}.Release|x64.Build.0 = Release|x64
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Debug|Win32.Build.0 = Debug|Win32
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Debug|x64.ActiveCfg = Debug|x64
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Debug|x64.Build.0 = Debug|x64
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Release|Win32.ActiveCfg = Release|Win32
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Release|Win32.Build.0 = Release|Win32
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Release|x64.ActiveCfg = Release|x64
+		{A09544B4-ED8F-4C69-87A6-1E753663974E}.Release|x64.Build.0 = Release|x64
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Debug|Win32.Build.0 = Debug|Win32
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Debug|x64.ActiveCfg = Debug|x64
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Debug|x64.Build.0 = Debug|x64
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Release|Win32.ActiveCfg = Release|Win32
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Release|Win32.Build.0 = Release|Win32
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Release|x64.ActiveCfg = Release|x64
+		{A994655E-B849-43A7-88BD-B49E3A94C80E}.Release|x64.Build.0 = Release|x64
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Debug|Win32.Build.0 = Debug|Win32
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Debug|x64.ActiveCfg = Debug|x64
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Debug|x64.Build.0 = Debug|x64
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Release|Win32.ActiveCfg = Release|Win32
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Release|Win32.Build.0 = Release|Win32
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Release|x64.ActiveCfg = Release|x64
+		{FEBD661E-2536-4334-8807-FD816F708D8F}.Release|x64.Build.0 = Release|x64
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Debug|Win32.Build.0 = Debug|Win32
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Debug|x64.ActiveCfg = Debug|x64
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Debug|x64.Build.0 = Debug|x64
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Release|Win32.ActiveCfg = Release|Win32
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Release|Win32.Build.0 = Release|Win32
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Release|x64.ActiveCfg = Release|x64
+		{7CC337BF-69CC-416A-9899-508534A3080F}.Release|x64.Build.0 = Release|x64
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Debug|Win32.Build.0 = Debug|Win32
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Debug|x64.ActiveCfg = Debug|x64
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Debug|x64.Build.0 = Debug|x64
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Release|Win32.ActiveCfg = Release|Win32
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Release|Win32.Build.0 = Release|Win32
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Release|x64.ActiveCfg = Release|x64
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01}.Release|x64.Build.0 = Release|x64
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Debug|Win32.Build.0 = Debug|Win32
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Debug|x64.ActiveCfg = Debug|x64
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Debug|x64.Build.0 = Debug|x64
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Release|Win32.ActiveCfg = Release|Win32
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Release|Win32.Build.0 = Release|Win32
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Release|x64.ActiveCfg = Release|x64
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083}.Release|x64.Build.0 = Release|x64
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Debug|Win32.Build.0 = Debug|Win32
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Debug|x64.ActiveCfg = Debug|x64
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Debug|x64.Build.0 = Debug|x64
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Release|Win32.ActiveCfg = Release|Win32
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Release|Win32.Build.0 = Release|Win32
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Release|x64.ActiveCfg = Release|x64
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -576,6 +674,12 @@ Global
 		{B9A38497-DA0C-44F4-874A-7EFB4C1BD098} = {57D100F8-647F-47CC-B98F-CAF68C271593}
 		{46FFA3FD-06BC-4E92-A7DD-26F845085D30} = {57D100F8-647F-47CC-B98F-CAF68C271593}
 		{AB2E8E4C-669F-4B90-B3E3-BFA342F71C86} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{A09544B4-ED8F-4C69-87A6-1E753663974E} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{A994655E-B849-43A7-88BD-B49E3A94C80E} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{FEBD661E-2536-4334-8807-FD816F708D8F} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{7CC337BF-69CC-416A-9899-508534A3080F} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{ADD6DFC8-C325-4E96-B4ED-F24DECA67083} = {57D100F8-647F-47CC-B98F-CAF68C271593}
+		{8797E00F-8060-41A6-9D14-C53AD17AEA6A} = {57D100F8-647F-47CC-B98F-CAF68C271593}
 		{F7E01007-D32F-4457-929D-92CB9FBEFA17} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
 		{6B179C5F-380E-47A5-8737-621D53912323} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
 		{104D89C1-5E6E-4EDC-95F1-D82F13C38980} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
@@ -596,5 +700,6 @@ Global
 		{0B91311A-4274-4043-A92D-A0395475ED76} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
 		{45B9121F-C8E4-4A3E-887B-7C9140533ACE} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
 		{5F6DC44C-055C-40A5-A61B-C86D755B4AD6} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
+		{BA3BDC14-27B3-4AD1-9D93-943CA8598D01} = {95ABFAF3-B682-45EF-9C62-D05BDB612824}
 	EndGlobalSection
 EndGlobal

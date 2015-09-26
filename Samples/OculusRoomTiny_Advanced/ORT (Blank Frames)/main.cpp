@@ -24,8 +24,8 @@ limitations under the License.
 /// Press any of keys '1' to '4' to see a few preset examples.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -55,7 +55,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
             || ((DIRECTX.Key['4']) && ((clock % (50*2)) == (eye*50)))) // Every 10 frames
                 timesToRenderScene = 0;
 
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye,0,0,timesToRenderScene);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,timesToRenderScene);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

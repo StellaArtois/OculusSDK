@@ -24,8 +24,8 @@ limitations under the License.
 /// mapping the left, right and up keys to the left,right and above respectively.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -71,16 +71,16 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         }
 
         // Lets interrogate the keys for movement
-        if ((DIRECTX.Key[altAhead])
-         || (DIRECTX.Key[ahead])) basicVR.MainCam->Pos += basicVR.MainCam->Rot.Transform(Vector3f(0, 0, -0.05f));
-        if (DIRECTX.Key[back])    basicVR.MainCam->Pos += basicVR.MainCam->Rot.Transform(Vector3f(0, 0, +0.05f));
-        if (DIRECTX.Key[right])   basicVR.MainCam->Pos += basicVR.MainCam->Rot.Transform(Vector3f(+0.05f, 0, 0));
-        if (DIRECTX.Key[left])    basicVR.MainCam->Pos += basicVR.MainCam->Rot.Transform(Vector3f(-0.05f, 0, 0));
+		if ((DIRECTX.Key[altAhead])|| (DIRECTX.Key[ahead]))
+			                    basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(0, 0, -0.05f, 0), basicVR.MainCam.Rot));
+		if (DIRECTX.Key[back])  basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(0, 0, +0.05f, 0), basicVR.MainCam.Rot)); 
+		if (DIRECTX.Key[right]) basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(+0.05f, 0, 0, 0), basicVR.MainCam.Rot)); 
+		if (DIRECTX.Key[left])  basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(-0.05f, 0, 0, 0), basicVR.MainCam.Rot)); 
 
 
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

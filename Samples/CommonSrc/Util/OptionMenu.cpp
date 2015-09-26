@@ -27,6 +27,13 @@ limitations under the License.
 #include "../Render/Render_FontEmbed_DejaVu48.h"
 
 
+static float Menu_ColorGammaCurve = 1.0f;
+
+void Menu_SetColorGammaCurve(float colorGammaCurve)
+{
+    Menu_ColorGammaCurve = colorGammaCurve;
+}
+
 //-------------------------------------------------------------------------------------
 bool OptionShortcut::MatchKey(OVR::KeyCode key, bool shift) const
 {
@@ -85,6 +92,62 @@ String OptionMenuItem::PopNamespaceFrom(OptionMenuItem* menuItem)
         }
     }
     return "";
+}
+
+OptionMenuItem *OptionSelectionMenu::FindMenuItem(String menuItemLabel)
+{
+    String menuName = menuItemLabel;
+    String rest = "";
+    // Split at the first . (if there is one)
+    for (uint32_t i = 0; i < menuItemLabel.GetLength(); i++)
+    {
+        if (menuItemLabel.GetCharAt(i) == '.')
+        {
+            menuName = menuItemLabel.Substring(0, i);
+            rest = menuItemLabel.Substring(i + 1, menuItemLabel.GetLength());
+            break;
+        }
+    }
+
+    // And now go find that submenu.
+    for (uint32_t i = 0; i < Items.GetSize(); i++)
+    {
+        OptionMenuItem *subItem = Items[i];
+        String subName = subItem->Label;
+        size_t menuNameLength = menuName.GetLength();
+        bool namesMatch = false;
+        if ( 0 == OVR_strnicmp ( subName, menuName, menuNameLength ) )
+        {
+            // The actual name may have a keyboard shortcut after it, which we want to ignore.
+            // So we need to make "Hello" match "Hello 'Shift+H'" but not "HelloWorld"
+            if ( subName.GetLength() > menuNameLength )
+            {
+                if ( ( ( subName[menuNameLength] == ' ' ) && ( subName[menuNameLength+1] == '\'' ) ) ||
+                     ( subName[menuNameLength] == '\'' ) )
+                {
+                    namesMatch = true;
+                }
+            }
+            else
+            {
+                namesMatch = true;
+            }
+        }
+
+        if (namesMatch)
+        {
+            if ( subItem->IsMenu() )
+            {
+                OptionSelectionMenu *subMenu = static_cast<OptionSelectionMenu*>(subItem);
+                return subMenu->FindMenuItem(rest);
+            }
+            else
+            {
+                return subItem;
+            }
+        }
+    }
+    return nullptr;
 }
 
 //-------------------------------------------------------------------------------------
@@ -281,11 +344,73 @@ void OptionVar::PrevValue(bool* pFastStep)
     SignalUpdate();
 }
 
+// Set value from a string. Returns true on success.
+bool OptionVar::SetValue(String newVal)
+{
+    bool success = false;
+    switch (Type)
+    {
+    case Type_Enum:
+    {
+        success = false;
+        for ( auto enumVal : EnumValues )
+        {
+            if ( 0 == enumVal.Name.CompareNoCase ( newVal ) )
+            {
+                *AsInt() = enumVal.Value;
+                success = true;
+                break;
+            }
+        }
+        break;
+    }
+    
+    case Type_Int:
+    {
+        int newIntVal = OVR_strtol ( newVal, nullptr, 10 );
+        *AsInt() = newIntVal;
+        success = true;
+        break;
+    }
+
+    case Type_Float:
+    {
+        float newFloatVal = (float)OVR_strtod ( newVal, nullptr );
+        *AsFloat() = newFloatVal;
+        success = true;
+        break;
+    }
+
+    case Type_Bool:
+        if ( ( 0 == newVal.CompareNoCase ( "false" ) ) ||
+             ( 0 == newVal.CompareNoCase ( "0" ) ) ||
+             ( 0 == newVal.CompareNoCase ( "" ) ) )
+        {
+            *AsBool() = false;
+        }
+        else
+        {
+            *AsBool() = true;
+        }
+        success = true;
+        break;
+
+    case Type_Trigger:
+        // Nothing to do except cause the trigger (which is still important).
+        break;
+
+    default: OVR_ASSERT(false); break; // unhandled
+    }
+
+    SignalUpdate();
+    return success;
+}
+
+
 String OptionVar::HandleShortcutUpdate()
 {
     if(Type != Type_Trigger)
     {
-        SignalUpdate();
         return Label + " - " + GetValue();
     }
     else
@@ -537,6 +662,14 @@ bool FindLineCharRange(const char* text, int searchLine, size_t charRange[2])
     return false;
 }
 
+Color ApplyGammaCurve(Color inColor, float gammaCurve)
+{
+    inColor.R = (uint8_t)(pow(OVR::Alg::Clamp(((float)inColor.R) / 255.999f, 0.0f, 1.0f), gammaCurve) * 255.999f);
+    inColor.G = (uint8_t)(pow(OVR::Alg::Clamp(((float)inColor.G) / 255.999f, 0.0f, 1.0f), gammaCurve) * 255.999f);
+    inColor.B = (uint8_t)(pow(OVR::Alg::Clamp(((float)inColor.B) / 255.999f, 0.0f, 1.0f), gammaCurve) * 255.999f);
+    // leave inColor.A intact
+    return inColor;
+}
 
 Recti OptionSelectionMenu::Render(RenderDevice* prender, String title, float textSize, float centerX, float centerY)
 {
@@ -566,6 +699,17 @@ Recti OptionSelectionMenu::Render(RenderDevice* prender, String title, float tex
     Color pickedColor(120, 55, 10, 140);
     Color titleColor(0x18, 0x1A, 0x4D, 210);
     Color titleOutlineColor(0x18, 0x18, 0x18, 240);
+    Color blueRectColor(40, 40, 100, 210);
+
+    if (Menu_ColorGammaCurve != 1.0f)
+    {
+        // convert all colors to requested srgb space
+        focusColor = ApplyGammaCurve(focusColor, Menu_ColorGammaCurve);
+        pickedColor = ApplyGammaCurve(pickedColor, Menu_ColorGammaCurve);
+        titleColor = ApplyGammaCurve(titleColor, Menu_ColorGammaCurve);
+        titleOutlineColor = ApplyGammaCurve(titleOutlineColor, Menu_ColorGammaCurve);
+        blueRectColor = ApplyGammaCurve(blueRectColor, Menu_ColorGammaCurve);
+    }
 
     float    labelsSize[2]     = {0.0f, 0.0f};
     float    bufferSize[2]     = {0.0f, 0.0f};
@@ -639,7 +783,7 @@ Recti OptionSelectionMenu::Render(RenderDevice* prender, String title, float tex
         bottomRight.y += textSize * 7;
     }
 
-    prender->FillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y, Color(40,40,100,210));
+    prender->FillRect(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y, blueRectColor);
     Recti bounds;
     bounds.x = (int)floor(topLeft.x);
     bounds.y = (int)floor(topLeft.y);
@@ -714,7 +858,7 @@ Recti OptionSelectionMenu::renderShortcutChangeMessage(RenderDevice* prender, fl
 {
     if (ovr_GetTimeInSeconds() < PopupMessageTimeout)
     {
-        return DrawTextBox(prender, centerX, centerY+120.0f, textSize, PopupMessage.ToCStr(),
+        return DrawTextBox(prender, centerX, centerY + 120.0f, textSize, PopupMessage.ToCStr(),
                            DrawText_Center | (PopupMessageBorder ? DrawText_Border : 0));
     }
     return Recti(0, 0, 0, 0);
@@ -943,12 +1087,18 @@ Recti DrawTextBox(RenderDevice* prender, float x, float y,
     if (centerType & DrawText_Border)    
         linesHeight = 10.0f;    
 
+    Color rectColor = Color(40, 40, 100, 210);
+
+    if (Menu_ColorGammaCurve != 1.0f)
+    {
+        rectColor = ApplyGammaCurve(rectColor, Menu_ColorGammaCurve);
+    }
+
     float l = x-borderSize;
     float t = y-borderSize - linesHeight;
     float r = x+ssize[0]+borderSize;
     float b = y+ssize[1]+borderSize + linesHeight;
-    prender->FillRect(l, t, r, b,
-                      Color(40,40,100,210));
+    prender->FillRect(l, t, r, b, rectColor);
 
     if (centerType & DrawText_Border)
     {
@@ -974,6 +1124,18 @@ Recti DrawTextBox(RenderDevice* prender, float x, float y,
 
     return bounds;
 }
+
+
+Sizef DrawTextMeasure(RenderDevice* prender, float textSize, const char* text)
+{
+    float ssize[2] = { 0.0f, 0.0f };
+
+    prender->MeasureText(&DejaVu, text, textSize, ssize);
+    OVR_UNUSED(prender);
+
+    return Sizef(ssize[0] + 8.0f, ssize[1] + 8.0f);
+}
+
 
 void CleanupDrawTextFont()
 {

@@ -44,7 +44,9 @@ public:
     bool ReadFile(const char* fileName, OVR::Render::RenderDevice* pRender,
                   OVR::Render::Scene* pScene,
 		          OVR::Array<Ptr<CollisionModel> >* pColisions,
-                  OVR::Array<Ptr<CollisionModel> >* pGroundCollisions);
+                  OVR::Array<Ptr<CollisionModel> >* pGroundCollisions,
+                  bool srgbAware = false,
+                  bool anisotropic = false);
 
 protected:
     void ParseVectorString(const char* str, OVR::Array<OVR::Vector3f> *array,

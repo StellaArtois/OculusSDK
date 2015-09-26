@@ -25,7 +25,7 @@
     <ProjectGuid>{F223272D-69F7-4373-8988-82A37F4D2C46}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>h.  ORT (Recenter Pose)</ProjectName>
+    <ProjectName>h. Recenter Pose</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

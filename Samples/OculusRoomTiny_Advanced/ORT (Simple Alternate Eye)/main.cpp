@@ -35,49 +35,56 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
 #include "..\Common\Win32_BasicVR.h"         // Basic VR
 
+struct SimpleAlternateEye : BasicVR
+{
+    SimpleAlternateEye(HINSTANCE hinst) : BasicVR(hinst, L"Simple Alternate Eye") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+
+            // Get Eye poses, but into a temporary buffer,
+            ovrPosef tempEyeRenderPose[2];
+            Layer[0]->GetEyePoses(tempEyeRenderPose);
+
+            // Decide which eye will be drawn this frame
+            static int eyeThisFrame = 0;
+            eyeThisFrame = 1 - eyeThisFrame;
+
+            // We're going to note the player orientation
+            // and store it if used to render an eye
+            XMVECTOR playerOrientation = MainCam->Rot;
+		    static XMVECTOR playerOrientationAtRender[2];
+
+            for (int eye = 0; eye < 2; eye++)
+            {
+                // If required, update EyeRenderPose and corresponding eye buffer
+                if ((DIRECTX.Key['1']) && (eye != eyeThisFrame)) continue;
+            
+                // Record the user yaw orientation for this eye image
+                if (!DIRECTX.Key['2']) playerOrientationAtRender[eye] = playerOrientation;
+
+                Layer[0]->EyeRenderPose[eye] = tempEyeRenderPose[eye];
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+            }
+        
+		    XMVECTOR diffQuat[2] = { XMQuaternionIdentity(), XMQuaternionIdentity() };
+            if (!DIRECTX.Key['2']) diffQuat[0] = XMQuaternionMultiply(XMQuaternionInverse(playerOrientationAtRender[0]), playerOrientation);
+		    if (!DIRECTX.Key['2']) diffQuat[1] = XMQuaternionMultiply(XMQuaternionInverse(playerOrientationAtRender[1]), playerOrientation);
+
+            Layer[0]->PrepareLayerHeader(0, 0, diffQuat);
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        // Get Eye poses, but into a temporary buffer,
-        ovrPosef tempEyeRenderPose[2];
-        basicVR.Layer[0]->GetEyePoses(tempEyeRenderPose);
-
-        // Decide which eye will be drawn this frame
-        static int eyeThisFrame = 0;
-        eyeThisFrame = 1-eyeThisFrame;
-
-        // We're going to note the player orientation
-        // and store it if used to render an eye
-        Quatf playerOrientation(basicVR.MainCam->Rot);
-        static Quatf playerOrientationAtRender[2];
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            // If required, update EyeRenderPose and corresponding eye buffer
-            if ((DIRECTX.Key['1']) && (eye!=eyeThisFrame)) continue;
-            
-            // Record the user yaw orientation for this eye image
-            if (!DIRECTX.Key['2']) playerOrientationAtRender[eye] = playerOrientation;
-
-            basicVR.Layer[0]->EyeRenderPose[eye] = tempEyeRenderPose[eye];
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-        
-        Quatf diff[2] = { Quatf(), Quatf() };
-        if (!DIRECTX.Key['2']) diff[0] = playerOrientationAtRender[0].Inverted() * playerOrientation;
-        if (!DIRECTX.Key['2']) diff[1] = playerOrientationAtRender[1].Inverted() * playerOrientation;
-
-    basicVR.Layer[0]->PrepareLayerHeader(0,0,diff);
-    basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	SimpleAlternateEye app(hinst);
+    return app.Run();
 }

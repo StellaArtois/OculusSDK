@@ -25,7 +25,7 @@
     <ProjectGuid>{D2EC8E8D-2051-4E51-9829-559631D8C15C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>ORT (Static Background)</ProjectName>
+    <ProjectName>Static Background</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

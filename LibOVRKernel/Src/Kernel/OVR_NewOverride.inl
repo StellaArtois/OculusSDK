@@ -148,6 +148,8 @@ OVR_NEW_OVERRIDE_INLINE void operator delete[](void* p, const std::nothrow_t&) O
  
  
 // The following new/delete overrides are required under VC++ because it defines the following operator new versions of its own.
+#if defined(_MSC_VER)
+
 OVR_NEW_OVERRIDE_INLINE void* operator new(size_t n, const char* /*fileName*/, int /*line*/)
 {
     return ::operator new(n);
@@ -167,6 +169,29 @@ OVR_NEW_OVERRIDE_INLINE void operator delete[](void* p, const char* /*fileName*/
 {
     ::operator delete[](p);
 }
+
+OVR_NEW_OVERRIDE_INLINE void* operator new(size_t n, int /*debug*/, const char* /*fileName*/, int /*line*/)
+{
+    return ::operator new (n);
+}
+
+OVR_NEW_OVERRIDE_INLINE void* operator new[](size_t n, int /*debug*/, const char* /*fileName*/, int /*line*/)
+{
+    return ::operator new[](n);
+}
+
+OVR_NEW_OVERRIDE_INLINE void operator delete(void* p, int /*debug*/, const char* /*fileName*/, int /*line*/)
+{
+    ::operator delete(p);
+}
+
+OVR_NEW_OVERRIDE_INLINE void operator delete[](void* p, int /*debug*/, const char* /*fileName*/, int /*line*/)
+{
+    ::operator delete[](p);
+}
+
+#endif
+
 
 
 #endif // OVR_NewOverride_inl

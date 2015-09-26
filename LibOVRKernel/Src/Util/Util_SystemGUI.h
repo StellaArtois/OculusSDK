@@ -26,6 +26,9 @@ limitations under the License.
 #define OVR_Util_GUI_h
 
 
+#include <stdarg.h>
+
+
 namespace OVR { namespace Util {
 
     // Displays a modal message box on the default GUI display (not on a VR device). 
@@ -33,6 +36,8 @@ namespace OVR { namespace Util {
     bool DisplayMessageBox(const char* pTitle, const char* pText);
 
     bool DisplayMessageBoxF(const char* pTitle, const char* pFormat, ...);
+
+    bool DisplayMessageBoxVaList(const char* pTitle, const char* pFormat, va_list argList);
 
 } } // namespace OVR::Util
 

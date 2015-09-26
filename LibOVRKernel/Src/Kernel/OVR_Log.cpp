@@ -107,6 +107,7 @@ namespace OVR {
 // Global Log pointer.
 Log* OVR_GlobalLog = nullptr;
 Log::CAPICallback OVR_CAPICallback = nullptr;
+uintptr_t OVR_CAPICallbackUserData = 0;
 
 
 //-----------------------------------------------------------------------------------
@@ -116,8 +117,8 @@ Log::Log(unsigned logMask) :
     LoggingMask(logMask)
 {
 #ifdef OVR_OS_WIN32
-    hEventSource = RegisterEventSourceA(NULL, "OculusVR");
-    OVR_ASSERT(hEventSource != NULL);
+    hEventSource = ::RegisterEventSourceW(nullptr, OVR_SYSLOG_NAME);
+    OVR_ASSERT(hEventSource != nullptr);
 #endif
 }
 
@@ -126,7 +127,7 @@ Log::~Log()
 #ifdef OVR_OS_WIN32
     if (hEventSource)
     {
-        DeregisterEventSource(hEventSource);
+        ::DeregisterEventSource(hEventSource);
     }
 #endif
 
@@ -138,11 +139,12 @@ Log::~Log()
     }
 }
 
-void Log::SetCAPICallback(CAPICallback callback)
+void Log::SetCAPICallback(CAPICallback callback, uintptr_t userData)
 {
     if (!OVR::System::IsInitialized())
     {
         OVR_CAPICallback = callback;
+        OVR_CAPICallbackUserData = userData;
     }
 }
 
@@ -173,7 +175,7 @@ static void RouteLogOutput(const char* message, LogMessageType messageType)
     }
 
     if (OVR_CAPICallback)
-        OVR_CAPICallback(level, message);
+        OVR_CAPICallback(OVR_CAPICallbackUserData, level, message);
 
     LogSubject::GetInstance()->Call(message, messageType);
 }
@@ -273,21 +275,46 @@ void OVR::Log::LogMessage(LogMessageType messageType, const char* pfmt, ...)
 int Log::FormatLog(char* buffer, size_t bufferSize, LogMessageType messageType,
                     const char* fmt, va_list argList)
 {
-    OVR_ASSERT(buffer && (bufferSize >= 10)); // Need to be able to at least print "Assert: \n" to it.
-    if(!buffer || (bufferSize < 10))
+    const char bareMinString[] = "01/01/15_08:00:00: Assert: \n";
+    OVR_UNUSED(bareMinString);
+    OVR_ASSERT(buffer && (bufferSize >= sizeof(bareMinString)));
+    if(!buffer || (bufferSize < sizeof(bareMinString)))
         return -1;
 
     int addNewline = 1;
     int prefixLength = 0;
 
+    // Prepend short timestamp to the message
+    time_t timer;
+    time(&timer);
+    if (timer != -1)
+    {
+        tm timeData;
+        errno_t err = gmtime_s(&timeData, &timer);
+        if (err == 0)
+        {
+            // We're guaranteed to have enough space in the buffer because of
+            // the minimum size check at the top of this function (so any
+            // bytesWritten > 0 is a success case here).
+            int bytesWritten = OVR_snprintf(buffer, bufferSize, "%02i/%02i/%02i %02i:%02i:%02i: ",
+                                            timeData.tm_mon+1, timeData.tm_mday,
+                                            timeData.tm_year % 100,
+                                            timeData.tm_hour, timeData.tm_min, timeData.tm_sec);
+            if (bytesWritten > 0)
+            {
+                prefixLength = bytesWritten;
+            }
+        }
+    }
+
     switch(messageType)
     {
-    case Log_Error:      OVR_strcpy(buffer, bufferSize, "Error: ");  prefixLength = 7; break;
-    case Log_Debug:      OVR_strcpy(buffer, bufferSize, "Debug: ");  prefixLength = 7; break;
-    case Log_Assert:     OVR_strcpy(buffer, bufferSize, "Assert: "); prefixLength = 8; break;
-    case Log_Text:       buffer[0] = 0; addNewline = 0; break;
-    case Log_DebugText:  buffer[0] = 0; addNewline = 0; break;
-    default:             buffer[0] = 0; addNewline = 0; break;
+    case Log_Error:      OVR_strcpy(buffer+prefixLength, bufferSize-prefixLength, "Error: ");  prefixLength += 7; break;
+    case Log_Debug:      OVR_strcpy(buffer+prefixLength, bufferSize-prefixLength, "Debug: ");  prefixLength += 7; break;
+    case Log_Assert:     OVR_strcpy(buffer+prefixLength, bufferSize-prefixLength, "Assert: "); prefixLength += 8; break;
+    case Log_Text:       buffer[prefixLength] = 0; addNewline = 0; break;
+    case Log_DebugText:  buffer[prefixLength] = 0; addNewline = 0; break;
+    default:             buffer[prefixLength] = 0; addNewline = 0; break;
     }
 
     char*  buffer2       = buffer + prefixLength;
@@ -302,13 +329,20 @@ int Log::FormatLog(char* buffer, size_t bufferSize, LogMessageType messageType,
             buffer2[0] = '\n'; // We are guaranteed to have capacity for this.
             buffer2[1] = '\0';
         }
-        else if((messageLength == 0) || (buffer2[messageLength - 1] != '\n')) // If there isn't already a trailing '\n' ...
+        else
         {
-            // If the printed string used all of the capacity or required more than the capacity,
-            // Chop the output by one character so we can append the \n safely.
-            int messageEnd = (messageLength >= (int)(size2 - 1)) ? (int)(size2 - 2) : messageLength;
-            buffer2[messageEnd + 0] = '\n';
-            buffer2[messageEnd + 1] = '\0';
+            size_t bufferUsed = messageLength;
+            if (bufferUsed > size2)
+                bufferUsed = size2;
+
+            if ((bufferUsed == 0) || (buffer2[bufferUsed - 1] != '\n')) // If there isn't already a trailing '\n' ...
+            {
+                // If the printed string used all of the capacity or required more than the capacity,
+                // Chop the output by one character so we can append the \n safely.
+                int messageEnd = (messageLength >= (int)(size2 - 1)) ? (int)(size2 - 2) : messageLength;
+                buffer2[messageEnd + 0] = '\n';
+                buffer2[messageEnd + 1] = '\0';
+            }
         }
     }
 
@@ -320,16 +354,18 @@ int Log::FormatLog(char* buffer, size_t bufferSize, LogMessageType messageType,
 
 void Log::DefaultLogOutput(const char* formattedText, LogMessageType messageType, int bufferSize)
 {
-    OVR_UNUSED2(bufferSize, formattedText);
+    std::wstring wideText = UTF8StringToUCSString(formattedText, bufferSize);
+    const wchar_t* wideBuff = wideText.c_str();
+    OVR_UNUSED(wideBuff);
 
 #if defined(OVR_OS_WIN32)
 
-    ::OutputDebugStringA(formattedText);
+    ::OutputDebugStringW(wideBuff);
     fputs(formattedText, stdout);
 
 #elif defined(OVR_OS_MS) // Any other Microsoft OSs
 
-    ::OutputDebugStringA(formattedText);
+    ::OutputDebugStringW(wideBuff);
 
 #elif defined(OVR_OS_ANDROID)
     // To do: use bufferSize to deal with the case that Android has a limited output length.
@@ -345,7 +381,7 @@ void Log::DefaultLogOutput(const char* formattedText, LogMessageType messageType
     if (messageType == Log_Error)
     {
 #if defined(OVR_OS_WIN32)
-        if (!ReportEventA(hEventSource, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &formattedText, NULL))
+        if (!ReportEventW(hEventSource, EVENTLOG_ERROR_TYPE, 0, 0, NULL, 1, 0, &wideBuff, NULL))
         {
             OVR_ASSERT(false);
         }
@@ -360,7 +396,6 @@ void Log::DefaultLogOutput(const char* formattedText, LogMessageType messageType
 #endif
     }
 }
-
 
 //static
 void Log::SetGlobalLog(Log *log)
@@ -528,8 +563,3 @@ bool IsAutomationRunning()
 }
 
 } // OVR
-
-
-
-
-

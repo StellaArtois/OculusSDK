@@ -29,6 +29,7 @@ limitations under the License.
     #include "Kernel/OVR_Win32_IncludeWindows.h"
 #endif // OVR_OS_WIN32
 #include "Kernel/OVR_Std.h"
+#include "Kernel/OVR_Allocator.h"
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -36,7 +37,7 @@ limitations under the License.
 namespace OVR { namespace Util {
 
 
-static bool DisplayMessageBoxVaList(const char* pTitle, const char* pFormat, va_list argList)
+bool DisplayMessageBoxVaList(const char* pTitle, const char* pFormat, va_list argList)
 {
     char  buffer[512];
     char* pBuffer = buffer;
@@ -104,13 +105,13 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
         static BOOL CALLBACK Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
         {
             switch (iMsg)
-	        {
+            {
                 case WM_INITDIALOG:
                 {
                     HWND hWndEdit = GetDlgItem(hDlg, ID_EDIT);
 
-                    const char* pText = (const char*)lParam;
-                    SetWindowTextA(hWndEdit, pText);
+                    const wchar_t* pText = (const wchar_t*)lParam;
+                    SetWindowTextW(hWndEdit, pText);
 
                     HFONT hFont = CreateFontW(-11, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, L"Courier New");
                     if(hFont)
@@ -124,21 +125,21 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
                 case WM_COMMAND:
                     switch (LOWORD(wParam))
                     {
-				        case ID_EDIT:
+                        case ID_EDIT:
                         {
                             // Handle messages from the edit control here.
                             HWND hWndEdit = GetDlgItem(hDlg, ID_EDIT);
                             SendMessage(hWndEdit, EM_SETSEL, (WPARAM)0, (LPARAM)0);
-					        return TRUE;
+                            return TRUE;
                         }
 
-		                case IDOK:
+                        case IDOK:
                             EndDialog(hDlg, 0);
-			                return TRUE;
+                            return TRUE;
                         case IDABORT:
                             _exit(0); // We don't call abort() because the visual studio runtime
                                       // will capture the signal and throw up another dialog
-		            }
+                    }
                     break;
                 case WM_CLOSE:
 
@@ -153,7 +154,7 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
 
     char dialogTemplateMemory[1024];
     memset(dialogTemplateMemory, 0, sizeof(dialogTemplateMemory));
-    DLGTEMPLATE* pDlg = (LPDLGTEMPLATE)dialogTemplateMemory;
+    LPDLGTEMPLATEW pDlg = (LPDLGTEMPLATEW)dialogTemplateMemory;
 
     const size_t textLength    = strlen(pText);
     const size_t textLineCount = Dialog::LineCount(pText);
@@ -178,13 +179,14 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
 
     WCHAR* pWchar = (WCHAR*)pWord;
     const size_t titleLength = strlen(pTitle);
-    size_t wcharCount = OVR::UTF8Util::DecodeString(pWchar, pTitle, (titleLength > 128) ? 128 : titleLength);
-    pWord += wcharCount + 1;
+    size_t wcharCount = OVR::UTF8Util::Strlcpy(pWchar, 128, pTitle, titleLength);
+
+    pWord += wcharCount +1;
 
     // Define an OK button.
     pWord = Dialog::WordUp(pWord);
 
-    DLGITEMTEMPLATE* pDlgItem = (DLGITEMTEMPLATE*)pWord;
+    PDLGITEMTEMPLATEW pDlgItem = (PDLGITEMTEMPLATEW)pWord;
     pDlgItem->x     = pDlg->cx - (kGutterSize + kButtonWidth);
     pDlgItem->y     = pDlg->cy - (kGutterSize + kButtonHeight);
     pDlgItem->cx    = kButtonWidth;
@@ -204,7 +206,7 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
     // Define a QUIT button
     pWord = Dialog::WordUp(pWord);
 
-    pDlgItem = (DLGITEMTEMPLATE*)pWord;
+    pDlgItem = (PDLGITEMTEMPLATEW)pWord;
     pDlgItem->x = pDlg->cx - ((kGutterSize + kButtonWidth) * 2);
     pDlgItem->y = pDlg->cy - (kGutterSize + kButtonHeight);
     pDlgItem->cx = kButtonWidth;
@@ -224,7 +226,7 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
     // Define an EDIT contol.
     pWord = Dialog::WordUp(pWord);
 
-    pDlgItem = (DLGITEMTEMPLATE*)pWord;
+    pDlgItem = (PDLGITEMTEMPLATEW)pWord;
     pDlgItem->x  = kGutterSize;
     pDlgItem->y  = kGutterSize;
     pDlgItem->cx = pDlg->cx - (kGutterSize + kGutterSize);
@@ -237,7 +239,17 @@ bool DisplayMessageBox(const char* pTitle, const char* pText)
     *pWord++ = 0x0081;  // edit class atom
     *pWord++ = 0;       // no creation data
 
-    LRESULT ret = DialogBoxIndirectParam(NULL, (LPDLGTEMPLATE)pDlg, NULL, (DLGPROC)Dialog::Proc, (LPARAM)pText);
+    // We use SafeMMapAlloc instead of malloc/new because we may be in a situation with a broken heap, which triggered this message box.
+    LRESULT  ret = 0;
+    size_t   textBuffWCapacity = textLength + 1;
+    wchar_t* textBuffW = (wchar_t*)OVR::SafeMMapAlloc(textBuffWCapacity * sizeof(wchar_t));
+
+    if(textBuffW)
+    {
+        OVR::UTF8Util::Strlcpy(textBuffW, textBuffWCapacity, pText, textLength);
+        ret = DialogBoxIndirectParamW(NULL, (LPDLGTEMPLATEW)pDlg, NULL, (DLGPROC)Dialog::Proc, (LPARAM)textBuffW);
+        OVR::SafeMMapFree(textBuffW, textBuffWCapacity * sizeof(wchar_t));
+    }
 
     return (ret != 0);
 }

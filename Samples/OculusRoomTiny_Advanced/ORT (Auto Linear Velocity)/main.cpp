@@ -25,8 +25,8 @@ limitations under the License.
 /// Try picking points in the room, and moving to them, to see how intuitive it feels.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"  // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -42,20 +42,20 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         basicVR.Layer[0]->GetEyePoses();
 
         // Find perturbation of position from point 1m in front of camera
-        Vector3f eye0 = (Vector3f) basicVR.Layer[0]->EyeRenderPose[0].Position;
-        Vector3f eye1 = (Vector3f) basicVR.Layer[0]->EyeRenderPose[1].Position;
-        Vector3f perturb = ((eye0+eye1)*0.5f);
+        XMVECTOR eye0 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Position);
+        XMVECTOR eye1 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[1].Position);
+        XMVECTOR perturb = XMVectorScale(XMVectorAdd(eye0,eye1),0.5f);
 
         // Calculate velocity from this
         const float sensitivity = 0.2f;
-        Vector3f vel = Vector3f(-perturb.x,0,-perturb.z) * sensitivity;
+		XMVECTOR vel = XMVectorScale(XMVectorSet(-XMVectorGetX(perturb), 0, -XMVectorGetZ(perturb), 0), sensitivity);
 
           // Add velocity to camera
-        basicVR.MainCam->Pos += vel;
+        basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos,vel);
  
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

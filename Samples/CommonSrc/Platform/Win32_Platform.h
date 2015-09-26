@@ -91,10 +91,10 @@ public:
     PlatformCore(Application* app, HINSTANCE hinst);
     ~PlatformCore();
 
-    void*	  SetupWindow(int w, int h);
-    void      DestroyWindow();
-    void      ShowWindow(bool visible);
-    void      Exit(int exitcode)
+    void*	  SetupWindow(int w, int h) OVR_OVERRIDE;
+    void      DestroyWindow() OVR_OVERRIDE;
+    void      ShowWindow(bool visible) OVR_OVERRIDE;
+    void      Exit(int exitcode) OVR_OVERRIDE
 	{
         // On some AMD cards, additional events may cause crashing after exit.
 		//for (MSG msg; PeekMessage(&msg, NULL, 0, 0, PM_REMOVE); )
@@ -104,19 +104,23 @@ public:
 
     RenderDevice* SetupGraphics(ovrHmd hmd, const SetupGraphicsDeviceSet& setupGraphicsDesc,
                                 const char* type,
-                                const Render::RendererParams& rp);
+                                const Render::RendererParams& rp,
+                                ovrGraphicsLuid luid) OVR_OVERRIDE;
 
-    void      SetMouseMode(MouseMode mm);
-    void      GetWindowSize(int* w, int* h) const;
+    void      SetMouseMode(MouseMode mm) OVR_OVERRIDE;
+    void      GetWindowSize(int* w, int* h) const OVR_OVERRIDE;
+    void      SetWindowSize(int w, int h) OVR_OVERRIDE;
 
-    void      SetWindowTitle(const char*title);
-	void	  PlayMusicFile(const char *fileName);
+    void      SetWindowTitle(const char*title) OVR_OVERRIDE;
+    void	  PlayMusicFile(const char *fileName) OVR_OVERRIDE;
+    String    GetContentDirectory() const OVR_OVERRIDE;
+
     int       GetDisplayCount();
     Render::DisplayId    GetDisplay(int screen);
 
     // Creates notification overlay text box over the top of OS window.
     virtual void        SetNotificationOverlay(int index, int fontHeightPixels,
-                                               int yoffset, const char* text);
+                                               int yoffset, const char* text) OVR_OVERRIDE;
 
     int       Run();
 };

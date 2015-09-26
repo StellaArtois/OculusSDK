@@ -5,7 +5,7 @@ Content     :   Logic for loading, and creating rendered scene components,
                 cube and grid overlays, etc.
 Created     :   October 4, 2012
 Authors     :   Michael Antonov, Andrew Reisse, Steve LaValle, Dov Katz
-				Peter Hoff, Dan Goodman, Bryan Croteau                
+				Peter Hoff, Dan Goodman, Bryan Croteau
 
 Copyright   :   Copyright 2012 Oculus VR, LLC. All Rights reserved.
 
@@ -32,15 +32,9 @@ limitations under the License.
 void OculusWorldDemoApp::InitMainFilePath()
 {
     // We try alternative relative locations for the file.
-    const String contentBase = pPlatform->GetContentDirectory() + "/" + WORLDDEMO_ASSET_PATH1;
+    const String contentBase = pPlatform->GetContentDirectory() + "/" + WORLDDEMO_ASSET_PATH;
     const char* baseDirectories[] = { "",
                                       contentBase.ToCStr(),
-                                      WORLDDEMO_ASSET_PATH2,
-                                      WORLDDEMO_ASSET_PATH3,
-                                      WORLDDEMO_ASSET_PATH4,
-                                      WORLDDEMO_ASSET_PATH5,
-                                      WORLDDEMO_ASSET_PATH6,
-                                      WORLDDEMO_ASSET_PATH7,
                                       #ifdef SHRDIR
                                           #define STR1(x) #x
                                           #define STR(x)  STR1(x)
@@ -51,8 +45,8 @@ void OculusWorldDemoApp::InitMainFilePath()
 
     for(size_t i = 0; i < OVR_ARRAY_COUNT(baseDirectories); ++i)
     {
-        newPath  = baseDirectories[i];	
-        newPath += WORLDDEMO_ASSET_FILE;	
+        newPath  = baseDirectories[i];
+        newPath += WORLDDEMO_ASSET_FILE;
 
         OVR_DEBUG_LOG(("Trying to load the scene at: %s...", newPath.ToCStr()));
 
@@ -71,15 +65,15 @@ void OculusWorldDemoApp::InitMainFilePath()
 void PopulateCubeFieldScene(Scene* scene, Fill* fill,
                             int cubeCountX, int cubeCountY, int cubeCountZ, Vector3f offset,
                             float cubeSpacing = 0.5f, float cubeSize = 0.1f)
-{    
+{
 
     Vector3f corner(-(((cubeCountX-1) * cubeSpacing) + cubeSize) * 0.5f,
                     -(((cubeCountY-1) * cubeSpacing) + cubeSize) * 0.5f,
-                    -(((cubeCountZ-1) * cubeSpacing) + cubeSize) * 0.5f);                    
+                    -(((cubeCountZ-1) * cubeSpacing) + cubeSize) * 0.5f);
     corner += offset;
 
     Vector3f pos = corner;
-    
+
     for (int i = 0; i < cubeCountX; i++)
     {
         // Create a new model for each 'plane' of cubes so we don't exceed
@@ -107,12 +101,12 @@ void PopulateCubeFieldScene(Scene* scene, Fill* fill,
     }
 }
 
-Fill* CreateTextureFill(RenderDevice* prender, const String& filename)
+Fill* CreateTextureFill(RenderDevice* prender, const String& filename, unsigned int fillTextureLoadFlags)
 {
     Ptr<File>    imageFile = *new SysFile(filename);
     Ptr<Texture> imageTex;
     if (imageFile->IsValid())
-        imageTex = *LoadTextureTgaTopDown(prender, imageFile);
+        imageTex = *LoadTextureTgaTopDown(prender, imageFile, fillTextureLoadFlags, 255);
 
     // Image is rendered as a single quad.
     ShaderFill* fill = 0;
@@ -120,64 +114,95 @@ Fill* CreateTextureFill(RenderDevice* prender, const String& filename)
     {
         imageTex->SetSampleMode(Sample_Anisotropic|Sample_Repeat);
         fill = new ShaderFill(*prender->CreateShaderSet());
-        fill->GetShaders()->SetShader(prender->LoadBuiltinShader(Shader_Vertex, VShader_MVP)); 
-        fill->GetShaders()->SetShader(prender->LoadBuiltinShader(Shader_Fragment, FShader_Texture)); 
-        fill->SetTexture(0, imageTex);            
+        fill->GetShaders()->SetShader(prender->LoadBuiltinShader(Shader_Vertex, VShader_MVP));
+        fill->GetShaders()->SetShader(prender->LoadBuiltinShader(Shader_Fragment, FShader_Texture));
+        fill->SetTexture(0, imageTex);
     }
 
     return fill;
 }
 
-
 // Loads the scene data
 void OculusWorldDemoApp::PopulateScene(const char *fileName)
-{    
-    XmlHandler xmlHandler;         
-    if(!xmlHandler.ReadFile(fileName, pRender, &MainScene, &CollisionModels, &GroundCollisionModels))
+{
+    ClearScene();
+
+    XmlHandler xmlHandler;
+    if(!xmlHandler.ReadFile(fileName, pRender, &MainScene, &CollisionModels, &GroundCollisionModels, SrgbRequested, AnisotropicSample))
     {
         Menu.SetPopupMessage("FILE LOAD FAILED");
         Menu.SetPopupTimeout(10.0f, true);
-    }    
+    }
 
     MainScene.SetAmbient(Color4f(1.0f, 1.0f, 1.0f, 1.0f));
-    
-    // Handy cube.
-    Ptr<Model> smallGreenCubeModel = *Model::CreateBox(Color(0, 255, 0, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
-    SmallGreenCube.World.Add(smallGreenCubeModel);
 
     String mainFilePathNoExtension = MainFilePath;
     mainFilePathNoExtension.StripExtension();
 
+    unsigned int fillTextureLoadFlags = 0;
+    fillTextureLoadFlags |= SrgbRequested ? TextureLoad_SrgbAware : 0;
+    fillTextureLoadFlags |= AnisotropicSample ? TextureLoad_Anisotropic : 0;
 
     // 10x10x10 cubes.
-    Ptr<Fill> fillR = *CreateTextureFill(pRender, mainFilePathNoExtension + "_redCube.tga");
+    Ptr<Fill> fillR = *CreateTextureFill(pRender, mainFilePathNoExtension + "_redCube.tga", fillTextureLoadFlags);
     PopulateCubeFieldScene(&RedCubesScene, fillR.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
 
     // 10x10x10 cubes.
-    Ptr<Fill> fillB = *CreateTextureFill(pRender, mainFilePathNoExtension + "_blueCube.tga");
+    Ptr<Fill> fillB = *CreateTextureFill(pRender, mainFilePathNoExtension + "_blueCube.tga", fillTextureLoadFlags);
     PopulateCubeFieldScene(&BlueCubesScene, fillB.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
 
-	// Anna: OculusWorldDemo/Assets/Tuscany/Tuscany_OculusCube.tga file needs to be added    
-    Ptr<Fill> imageFill = *CreateTextureFill(pRender, mainFilePathNoExtension + "_OculusCube.tga");
+	// Anna: OculusWorldDemo/Assets/Tuscany/Tuscany_OculusCube.tga file needs to be added
+    Ptr<Fill> imageFill = *CreateTextureFill(pRender, mainFilePathNoExtension + "_OculusCube.tga", fillTextureLoadFlags);
     PopulateCubeFieldScene(&OculusCubesScene, imageFill.GetPtr(), 11, 4, 35, Vector3f(0.0f, 0.0f, -6.0f), 0.5f);
+
+    // Handy untextured green cube.
+    Ptr<Model> smallGreenCubeModel = *Model::CreateBox(Color(0, 255, 0, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    SmallGreenCube.World.Add(smallGreenCubeModel);
+
+    // Textured cubes.
+    Ptr<Model> smallOculusCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    smallOculusCubeModel->Fill = imageFill;
+    SmallOculusCube.World.Add(smallOculusCubeModel);
+
+    Ptr<Model> smallOculusRedCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    smallOculusRedCubeModel->Fill = fillR;
+    SmallOculusRedCube.World.Add(smallOculusRedCubeModel);
+
+    Ptr<Model> smallOculusBlueCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    smallOculusBlueCubeModel->Fill = fillB;
+    SmallOculusBlueCube.World.Add(smallOculusBlueCubeModel);
+
+    int textureLoadFlags = 0;
+    textureLoadFlags |= SrgbRequested ? TextureLoad_SrgbAware : 0;
+    textureLoadFlags |= AnisotropicSample ? TextureLoad_Anisotropic : 0;
+    textureLoadFlags |= TextureLoad_MakePremultAlpha;
+    textureLoadFlags |= TextureLoad_SwapTextureSet;
 
     Ptr<File> imageFile = *new SysFile(mainFilePathNoExtension + "_blueCube.tga");
     if (imageFile->IsValid())
-        TextureBlueCube = *LoadTextureTgaTopDown(pRender, imageFile, 255, true, true);
+        TextureBlueCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
 
     imageFile = *new SysFile(mainFilePathNoExtension + "_redCube.tga");
     if (imageFile->IsValid())
-        TextureRedCube = *LoadTextureTgaTopDown(pRender, imageFile, 255, true, true);
+        TextureRedCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
 
     imageFile = *new SysFile(mainFilePathNoExtension + "_OculusCube.tga");
     if (imageFile->IsValid())
-        TextureOculusCube = *LoadTextureTgaTopDown(pRender, imageFile, 255, true, true);
+        TextureOculusCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
 
     imageFile = *new SysFile(mainFilePathNoExtension + "_Cockpit_Panel.tga");
     if (imageFile->IsValid())
-        CockpitPanelTexture = *LoadTextureTgaTopDown(pRender, imageFile, 255, true, true);
+        CockpitPanelTexture = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
 
-
+    XmlHandler xmlHandler2;
+    String controllerFilename = MainFilePath.GetPath() + "LeftController.xml";
+    if (!xmlHandler2.ReadFile(controllerFilename.ToCStr(), pRender, &ControllerScene, NULL, NULL))
+    {
+        Menu.SetPopupMessage("CONTROLLER FILE LOAD FAILED");
+        Menu.SetPopupTimeout(10.0f, true);
+    }
+    ControllerScene.AddLight(Vector3f(0, 30.0f, 0), Color4f(1.0f, 1.0f, 1.0f, 1.0f));
+    ControllerScene.AddLight(Vector3f(0, -10.0f, 0), Color4f(.2f, .2f, .2f, 1.0f));
 }
 
 void OculusWorldDemoApp::PopulatePreloadScene()
@@ -189,13 +214,13 @@ void OculusWorldDemoApp::PopulatePreloadScene()
     Ptr<File>    imageFile = *new SysFile(fileName + "_LoadScreen.tga");
     Ptr<Texture> imageTex;
     if (imageFile->IsValid())
-        imageTex = *LoadTextureTgaTopDown(pRender, imageFile);
+        imageTex = *LoadTextureTgaTopDown(pRender, imageFile, TextureLoad_SrgbAware, 255);
 
     // Image is rendered as a single quad.
     if (imageTex)
     {
         imageTex->SetSampleMode(Sample_Anisotropic|Sample_Repeat);
-        Ptr<Model> m = *new Model(Prim_Triangles);        
+        Ptr<Model> m = *new Model(Prim_Triangles);
         m->AddVertex(-0.5f,  0.5f,  0.0f, Color(255,255,255,255), 0.0f, 1.0f);
         m->AddVertex( 0.5f,  0.5f,  0.0f, Color(255,255,255,255), 1.0f, 1.0f);
         m->AddVertex( 0.5f, -0.5f,  0.0f, Color(255,255,255,255), 1.0f, 0.0f);
@@ -204,8 +229,8 @@ void OculusWorldDemoApp::PopulatePreloadScene()
         m->AddTriangle(0,3,2);
 
         Ptr<ShaderFill> fill = *new ShaderFill(*pRender->CreateShaderSet());
-        fill->GetShaders()->SetShader(pRender->LoadBuiltinShader(Shader_Vertex, VShader_MVP)); 
-        fill->GetShaders()->SetShader(pRender->LoadBuiltinShader(Shader_Fragment, FShader_Texture)); 
+        fill->GetShaders()->SetShader(pRender->LoadBuiltinShader(Shader_Vertex, VShader_MVP));
+        fill->GetShaders()->SetShader(pRender->LoadBuiltinShader(Shader_Fragment, FShader_Texture));
         fill->SetTexture(0, imageTex);
         m->Fill = fill;
 
@@ -216,7 +241,15 @@ void OculusWorldDemoApp::PopulatePreloadScene()
 void OculusWorldDemoApp::ClearScene()
 {
     MainScene.Clear();
+    LoadingScene.Clear();
     SmallGreenCube.Clear();
+    SmallOculusCube.Clear();
+    SmallOculusRedCube.Clear();
+    SmallOculusBlueCube.Clear();
+    RedCubesScene.Clear();
+    BlueCubesScene.Clear();
+    OculusCubesScene.Clear();
+    ControllerScene.Clear();
 }
 
 
@@ -226,18 +259,30 @@ void OculusWorldDemoApp::ClearScene()
 
 void OculusWorldDemoApp::RenderAnimatedBlocks(ovrEyeType eye, double appTime)
 {
+    Render::Scene *pBlockScene = &SmallGreenCube;
+    switch (BlocksShowMeshType)
+    {
+    case 0: pBlockScene = &SmallGreenCube; break;
+    case 1: pBlockScene = &SmallOculusCube; break;
+    case 2: pBlockScene = &SmallOculusRedCube; break;
+    case 3: pBlockScene = &SmallOculusBlueCube; break;
+    default:
+        BlocksShowMeshType = 0;
+        break;
+    }
+
     switch (BlocksShowType)
     {
     case 0:
         // No blocks;
         break;
 
-    case 1:
+    case 1: // Horizontal circle around a point.
+    case 2: // Vertical circle around a point.
         {
-            // Horizontal circle around your head.
-            const int   numBlocks = 10;
-            const float radius = 1.0f;
-            Matrix4f    scaleUp = Matrix4f::Scaling(20.0f, 40.0f, 20.0f);
+            int         numBlocks = BlocksHowMany;
+            float       radius = BlocksMovementRadius;
+            Matrix4f    scaleUp = Matrix4f::Scaling(BlocksSize);
             double      scaledTime = appTime * 0.1 * (double)BlocksSpeed;
             float       fracTime = (float)(scaledTime - floor(scaledTime));
 
@@ -245,58 +290,79 @@ void OculusWorldDemoApp::RenderAnimatedBlocks(ovrEyeType eye, double appTime)
             {
                 for (int i = 0; i < numBlocks; i++)
                 {
-                    float angle = (((float)i / numBlocks) + fracTime) * (MATH_FLOAT_PI * 2.0f);
-                    Vector3f pos;
-                    pos.x = BlocksCenter.x + radius * cosf(angle);
-                    pos.y = BlocksCenter.y;
-                    pos.z = BlocksCenter.z + radius * sinf(angle);
-                    if (j == 0)
+                    Vector3f offset;
+                    float angle;
+                    switch ( BlocksMovementType )
                     {
-                        pos.x = BlocksCenter.x - radius * cosf(angle);
-                        pos.y = BlocksCenter.y - 0.5f;
+                    case 0:
+                        // Rotating circle.
+                        angle = (((float)i / numBlocks) + fracTime) * (MATH_FLOAT_PI * 2.0f);
+                        offset.x = radius * cosf(angle);
+                        offset.y = radius * sinf(angle);
+                        offset.z = 0.25f;
+                        break;
+                    case 1:
+                        // Back and forth sine.
+                        angle = (((float)i / numBlocks)) * (MATH_FLOAT_PI * 2.0f);
+                        angle += BlocksMovementScale * cosf(fracTime*(MATH_FLOAT_PI * 2.0f));
+                        offset.x = radius * cosf(angle);
+                        offset.y = radius * sinf(angle);
+                        offset.z = 0.25f;
+                        break;
+                    case 2:
+                        // Back and forth triangle.
+                        angle = (((float)i / numBlocks)) * (MATH_FLOAT_PI * 2.0f);
+                        if ( fracTime < 0.5f )
+                        {
+                            angle += BlocksMovementScale * 2.0f * fracTime;
+                        }
+                        else
+                        {
+                            angle += BlocksMovementScale * 2.0f * (1.0f - fracTime);
+                        }
+                        offset.x = radius * cosf(angle);
+                        offset.y = radius * sinf(angle);
+                        offset.z = 0.25f;
+                        break;
+                    default:
+                        BlocksMovementType = 0;
                     }
+                    if ( j == 0 )
+                    {
+                        offset.x = -offset.x;
+                        offset.z = -offset.z;
+                    }
+
+                    Vector3f pos;
+                    if ( BlocksShowType == 1 )
+                    {
+                        // Horizontal
+                        pos.x = BlocksCenter.x + offset.x;
+                        pos.y = BlocksCenter.y + offset.z;
+                        pos.z = BlocksCenter.z + offset.y;
+                    }
+                    else
+                    {
+                        // Vertical
+                        pos.x = BlocksCenter.x + offset.z;
+                        pos.y = BlocksCenter.y + offset.x;
+                        pos.z = BlocksCenter.z + offset.y;
+                    }
+
                     Matrix4f translate = Matrix4f::Translation(pos);
-                    SmallGreenCube.Render(pRender, ViewFromWorld[eye] * translate * scaleUp);
+                    pBlockScene->Render(pRender, ViewFromWorld[eye] * translate * scaleUp);
                 }
             }
         }
         break;
 
-    case 2:
-        {
-            // Vertical circle around your head.
-            const int   numBlocks = 10;
-            const float radius = 1.0f;
-            Matrix4f    scaleUp = Matrix4f::Scaling(40.0f, 20.0f, 20.0f);
-            double      scaledTime = appTime * 0.1 * (double)BlocksSpeed;
-            float       fracTime = (float)(scaledTime - floor(scaledTime));
-
-            for (int j = 0; j < 2; j++)
-            {
-                for (int i = 0; i < numBlocks; i++)
-                {
-                    float angle = (((float)i / numBlocks) + fracTime) * (MATH_FLOAT_PI * 2.0f);
-                    Vector3f pos;
-                    pos.x = BlocksCenter.x;
-                    pos.y = BlocksCenter.y + radius * cosf(angle);
-                    pos.z = BlocksCenter.z + radius * sinf(angle);
-                    if (j == 0)
-                    {
-                        pos.x = BlocksCenter.x - 0.5f;
-                        pos.y = BlocksCenter.y - radius * cosf(angle);
-                    }
-                    Matrix4f translate = Matrix4f::Translation(pos);
-                    SmallGreenCube.Render(pRender, ViewFromWorld[eye] * translate * scaleUp);
-                }
-            }
-        }
         break;
 
     case 3:
         {
             // Bouncing.
             const int   numBlocks = 10;
-            Matrix4f    scaleUp = Matrix4f::Scaling(40.0f);
+            Matrix4f    scaleUp = Matrix4f::Scaling(BlocksSize);
 
             for (int i = 1; i <= numBlocks; i++)
             {
@@ -304,10 +370,10 @@ void OculusWorldDemoApp::RenderAnimatedBlocks(ovrEyeType eye, double appTime)
                 float fracTime = (float)(scaledTime - floor(scaledTime));
 
                 Vector3f pos = BlocksCenter;
-                pos.z += (float)i;
+                pos.z -= (float)i;
                 pos.y += -1.5f + 4.0f * (2.0f * fracTime * (1.0f - fracTime));
                 Matrix4f translate = Matrix4f::Translation(pos);
-                SmallGreenCube.Render(pRender, ViewFromWorld[eye] * translate * scaleUp);
+                pBlockScene->Render(pRender, ViewFromWorld[eye] * translate * scaleUp);
             }
         }
         break;
@@ -360,7 +426,7 @@ void OculusWorldDemoApp::RenderGrid(ovrEyeType eye, Recti renderViewport)
         limitY  = renderViewport.h / 2;
         break;
     case Grid_Lens:
-        {                           
+        {
             lineStep = 48;
             Vector2f rendertargetNDC = FovPort(EyeRenderDesc[eye].Fov).TanAngleToRendertargetNDC(Vector2f(0.0f));
             midX    = (int)( ( rendertargetNDC.x * 0.5f + 0.5f ) * (float)renderViewport.w + 0.5f );
@@ -425,5 +491,50 @@ void OculusWorldDemoApp::RenderGrid(ovrEyeType eye, Recti renderViewport)
             pRender->RenderLines ( 2, cNormal, x, y );
         }
     }
+
+    // Draw diagonal lines
+    {
+        float x[2];
+        float y[2];
+        x[0] = (float)(midX - renderViewport.w);
+        x[1] = (float)(midX + renderViewport.w);
+        y[0] = (float)(midY - renderViewport.w);
+        y[1] = (float)(midY + renderViewport.w);
+        pRender->RenderLines(1, cNormal, x, y);
+    }
+    {
+        float x[2];
+        float y[2];
+        x[0] = (float)(midX + renderViewport.w);
+        x[1] = (float)(midX - renderViewport.w);
+        y[0] = (float)(midY - renderViewport.w);
+        y[1] = (float)(midY + renderViewport.w);
+        pRender->RenderLines(1, cNormal, x, y);
+    }
 }
 
+
+void OculusWorldDemoApp::RenderControllers(ovrEyeType eye)
+{
+    if (!HasInputState)
+        return;
+
+    pRender->SetCullMode(RenderDevice::Cull_Off);
+
+    if (InputState.ConnectedControllerTypes & ovrControllerType_LTouch)
+    {
+        Matrix4f scaleUp   = Matrix4f::Scaling(1.0f);
+        Posef    worldPose = ThePlayer.VirtualWorldTransformfromRealPose(HandPoses[ovrHand_Left]);
+        Matrix4f playerPose(worldPose);
+        ControllerScene.Render(pRender, ViewFromWorld[eye] * playerPose * scaleUp);
+    }
+
+    if (InputState.ConnectedControllerTypes & ovrControllerType_RTouch)
+    {
+        Matrix4f scaleUp   = Matrix4f::Scaling(-1.0f, 1.0f, 1.0f);
+        Posef    worldPose = ThePlayer.VirtualWorldTransformfromRealPose(HandPoses[ovrHand_Right]);
+        Matrix4f playerPose(worldPose);
+        ControllerScene.Render(pRender, ViewFromWorld[eye] * playerPose * scaleUp);
+    }
+    pRender->SetCullMode(RenderDevice::Cull_Back);
+}

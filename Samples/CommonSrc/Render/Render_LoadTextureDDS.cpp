@@ -75,8 +75,11 @@ static inline int InterpretPixelFormatFourCC(uint32_t fourCC) {
 	return -1;
 }
 
-Texture* LoadTextureDDSTopDown(RenderDevice* ren, File* f)
+Texture* LoadTextureDDSTopDown(RenderDevice* ren, File* f, int textureLoadFlags)
 {
+    bool srgbAware = (textureLoadFlags & TextureLoad_SrgbAware) != 0;
+    bool anisotropic = (textureLoadFlags & TextureLoad_Anisotropic) != 0;
+
     OVR_DDS_HEADER header;
     unsigned char filecode[4];
 
@@ -106,6 +109,13 @@ Texture* LoadTextureDDSTopDown(RenderDevice* ren, File* f)
 		}
     }
 
+    // TODO: Should not blindly add srgb as a format flag, and instead should rely on some data driver flag per-texture
+    // The problem is that currently we do not have a way to data drive such a flag
+    if (srgbAware)
+    {
+        format |= Texture_SRGB;
+    }
+
     int            byteLen = f->BytesAvailable();
     unsigned char* bytes   = new unsigned char[byteLen];
     f->Read(bytes, byteLen);
@@ -116,7 +126,11 @@ Texture* LoadTextureDDSTopDown(RenderDevice* ren, File* f)
 
     if(strstr(f->GetFilePath(), "_c."))
     {
-        out->SetSampleMode(Sample_Clamp);
+        out->SetSampleMode(Sample_Clamp | (anisotropic ? Sample_Anisotropic : 0));
+    }
+    else
+    {
+        out->SetSampleMode((anisotropic ? Sample_Anisotropic : 0));
     }
 
     delete[] bytes;

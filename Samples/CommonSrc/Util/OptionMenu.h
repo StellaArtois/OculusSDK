@@ -130,6 +130,7 @@ public:
 
     virtual void    Select() { }
         
+    virtual bool    SetValue(String newVal) { OVR_UNUSED1(newVal); return false; }
     virtual void    NextValue(bool* pFastStep = NULL) { OVR_UNUSED1(pFastStep); }
     virtual void    PrevValue(bool* pFastStep = NULL) { OVR_UNUSED1(pFastStep); }
 
@@ -142,7 +143,7 @@ public:
 
     virtual bool    IsMenu() const { return false; }
 
-protected:
+//protected:
     String          Label;
     String          PopNamespaceFrom(OptionMenuItem* menuItem);
 };
@@ -196,15 +197,19 @@ public:
     virtual ~OptionVar();
 
     int32_t* AsInt()             { return reinterpret_cast<int32_t*>(pVar); }
-    bool*   AsBool()            { return reinterpret_cast<bool*>(pVar); }
-    float*  AsFloat()           { return reinterpret_cast<float*>(pVar); }
-    VarType GetType()           { return Type; }
+    bool*    AsBool()            { return reinterpret_cast<bool*>(pVar); }
+    float*   AsFloat()           { return reinterpret_cast<float*>(pVar); }
+    VarType  GetType()           { return Type; }
+
 
     //virtual void Select()   { if(Type == Type_Trigger) SignalUpdate(); }
 
     // Step through values (wrap for enums).
     virtual void NextValue(bool* pFastStep);
     virtual void PrevValue(bool* pFastStep);
+    // Set value from a string. Returns true on success.
+    virtual bool SetValue(String newVal) OVR_OVERRIDE;
+
 
     // Executes shortcut message and returns notification string.
     // Returns empty string for no action.
@@ -406,6 +411,10 @@ public:
     OptionSelectionMenu* GetSubmenu();
     OptionSelectionMenu* GetOrCreateSubmenu(String submenuName);
 
+    // Find a submenu of this menu. Returns nullptr if not found.
+    OptionMenuItem  *FindMenuItem(String menuItemLabel);
+
+
     enum DisplayStateType
     {
         Display_None,
@@ -468,10 +477,14 @@ enum DrawTextCenterType
 
 // Returns rendered bounds.
 Recti    DrawTextBox(RenderDevice* prender, float x, float y,
-                    float textSize, const char* text,
-                    unsigned centerType = DrawText_NoCenter);
+                    float textSize, const char* text, unsigned centerType);
+
+Sizef   DrawTextMeasure(RenderDevice* prender, float textSize, const char* text);
 
 void    CleanupDrawTextFont();
 
+// This is a separate function because we have functions like DrawTextBox() that do not have any class state
+// so we need to push the gamma curve value as a static variable for the options menu
+void    Menu_SetColorGammaCurve(float colorGammaCurve);
 
 #endif // OVR_OptionMenu_h

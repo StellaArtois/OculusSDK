@@ -25,8 +25,8 @@ limitations under the License.
 /// a jarring event.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -53,11 +53,11 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         if (VisibleYaw<(Yaw-0.5f*JUMP_IN_RADIANS)) VisibleYaw+=JUMP_IN_RADIANS;
 
         // Set into camera
-        basicVR.MainCam->Rot = Matrix4f::RotationY(VisibleYaw);
+        basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0,VisibleYaw,0);
  
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

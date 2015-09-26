@@ -25,8 +25,8 @@ limitations under the License.
 /// timewarp calculation, as seen in other samples.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -61,8 +61,8 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         {
             if (framesCanTurn) 
             {
-                if (DIRECTX.Key[VK_LEFT])  basicVR.MainCam->Rot = Matrix4f::RotationY(Yaw+=rotSpeed);
-                if (DIRECTX.Key[VK_RIGHT]) basicVR.MainCam->Rot = Matrix4f::RotationY(Yaw-=rotSpeed);
+				if (DIRECTX.Key[VK_LEFT])  basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0, Yaw += rotSpeed, 0); 
+				if (DIRECTX.Key[VK_RIGHT]) basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0, Yaw -= rotSpeed, 0); 
                 framesCanTurn--;
                 if (framesCanTurn==0) framesToWait = framesToRest;
             }
@@ -81,7 +81,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
  
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

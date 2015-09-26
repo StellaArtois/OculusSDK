@@ -306,7 +306,8 @@ static SharedMemoryInternal* AttemptOpenSharedMemory(const char* fileName, int m
     DWORD mapDesiredAccess = openReadOnly ? FILE_MAP_READ : FILE_MAP_WRITE;
 
     // Open file mapping
-    HANDLE hFileMapping = OpenFileMappingA(mapDesiredAccess, TRUE, fileName);
+    std::wstring wFileName = UTF8StringToUCSString(fileName);
+    HANDLE hFileMapping = OpenFileMappingW(mapDesiredAccess, TRUE, wFileName.c_str());
 
     // If file was mapped unsuccessfully,
     if (NULL == hFileMapping)

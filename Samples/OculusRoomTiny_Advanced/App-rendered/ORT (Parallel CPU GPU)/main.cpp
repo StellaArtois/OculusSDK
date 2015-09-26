@@ -43,8 +43,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 
 #define   OVR_D3D_VERSION 11
-#include "..\..\Common\Win32_DirectXAppUtil.h"    // DirectX
-#include "..\..\Common\Win32_BasicVR.h"     // Basic VR
+#include "..\..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\..\Common\Old\Win32_BasicVR.h"        // Basic VR
 #include "..\..\Common\Win32_AppRendered.h" // App-rendered
 
 //-------------------------------------------------------------------------------------

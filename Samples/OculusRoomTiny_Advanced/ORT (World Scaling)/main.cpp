@@ -26,42 +26,49 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
 #include "..\Common\Win32_BasicVR.h"         // Basic VR
 
+struct WorldScaling : BasicVR
+{
+    WorldScaling(HINSTANCE hinst) : BasicVR(hinst, L"World Scaling") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    Layer[0]->GetEyePoses();
+
+            // Decide our scale factor
+            float scaleFactor = 1.0f;
+            if (DIRECTX.Key['1']) scaleFactor = 0.5f;
+            if (DIRECTX.Key['2']) scaleFactor = 4.0f;
+
+            // Modify player height to fit with new scale
+		    MainCam->Pos = XMVectorMultiply(MainCam->Pos, XMVectorSet(1, 1.0f / scaleFactor, 1, 1));
+
+            for (int eye = 0; eye < 2; ++eye)
+            {
+                // Modify eye render pose used, since it incorporated
+                // the eye offsets, which need to be scaled, and
+                // the IPD.  Simply adjusting the output position
+                // achieves the required result.
+			    Layer[0]->EyeRenderPose[eye].Position.x /= scaleFactor;
+                Layer[0]->EyeRenderPose[eye].Position.y /= scaleFactor;
+                Layer[0]->EyeRenderPose[eye].Position.z /= scaleFactor;
+
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+            }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        basicVR.Layer[0]->GetEyePoses();
-
-        // Decide our scale factor
-        float scaleFactor = 1.0f;
-        if (DIRECTX.Key['1']) scaleFactor = 0.5f;
-        if (DIRECTX.Key['2']) scaleFactor = 4.0f;
-
-        // Modify player height to fit with new scale
-        basicVR.MainCam->Pos.y /= scaleFactor; 
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            // Modify eye render pose used, since it incorporated
-            // the eye offsets, which need to be scaled, and
-            // the IPD.  Simply adjusting the output position
-            // achieves the required result.
-            basicVR.Layer[0]->EyeRenderPose[eye].Position.x /= scaleFactor;
-            basicVR.Layer[0]->EyeRenderPose[eye].Position.y /= scaleFactor;
-            basicVR.Layer[0]->EyeRenderPose[eye].Position.z /= scaleFactor;
-
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	WorldScaling app(hinst);
+    return app.Run();
 }

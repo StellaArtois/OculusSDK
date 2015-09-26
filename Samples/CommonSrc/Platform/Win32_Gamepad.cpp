@@ -35,7 +35,7 @@ GamepadManager::GamepadManager() :
     LastPadPacketNo(0xffffffff),
     NextTryTime(0)
 {
-    hXInputModule = ::LoadLibraryA("Xinput9_1_0.dll");
+    hXInputModule = ::LoadLibraryW(L"Xinput9_1_0.dll");
     if (hXInputModule)
     {
         pXInputGetState = (PFn_XInputGetState)

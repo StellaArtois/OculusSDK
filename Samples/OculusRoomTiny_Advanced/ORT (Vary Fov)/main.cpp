@@ -28,41 +28,49 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
 #include "..\Common\Win32_BasicVR.h"         // Basic VR
 
+struct VaryFOV : BasicVR
+{
+    VaryFOV(HINSTANCE hinst) : BasicVR(hinst, L"Vary FOV") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    Layer[0]->GetEyePoses();
+
+            // Modify fov and reconfigure VR - at present, not realtime as
+            // new distortion meshes are created internally
+            if (DIRECTX.Key['1'])
+            {
+                ovrFovPort newFov[2] = { HmdDesc.DefaultEyeFov[0], HmdDesc.DefaultEyeFov[1] };
+                static int clock=0;
+                ++clock;
+
+                newFov[0].UpTan   += 0.2f * sin(0.20f * clock);
+                newFov[0].DownTan += 0.2f * sin(0.16f * clock);
+                newFov[1].UpTan   += 0.2f * sin(0.20f * clock);
+                newFov[1].DownTan += 0.2f * sin(0.16f * clock);
+
+                Layer[0]->ConfigureRendering(newFov); // Includes repreparing layer header
+            }
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        basicVR.Layer[0]->GetEyePoses();
-
-        // Modify fov and reconfigure VR - at present, not realtime as
-        // new distortion meshes are created internally
-        if (DIRECTX.Key['1'])
-        {
-            ovrFovPort newFov[2] = {basicVR.HMD->DefaultEyeFov[0],basicVR.HMD->DefaultEyeFov[1]};
-            static int clock=0;
-            clock++;
-            newFov[0].UpTan   += 0.2f*sin(0.20f*clock);
-            newFov[0].DownTan += 0.2f*sin(0.16f*clock);
-            newFov[1].UpTan   += 0.2f*sin(0.20f*clock);
-            newFov[1].DownTan += 0.2f*sin(0.16f*clock);
-
-            basicVR.Layer[0]->ConfigureRendering(newFov); // Includes repreparing layer header
-        }
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	VaryFOV app(hinst);
+    return app.Run();
 }

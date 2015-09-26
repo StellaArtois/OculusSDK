@@ -25,8 +25,8 @@ limitations under the License.
 /// Try loosely following the animating cube with your positional movements.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
-#include "..\Common\Win32_BasicVR.h"         // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 #include "..\Common\Win32_ControlMethods.h"  // Control code
 
 //-------------------------------------------------------------------------------------
@@ -42,11 +42,11 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         ovrTrackingState trackingState = basicVR.Layer[0]->GetEyePoses();
 
         // Add velocity to camera
-        basicVR.MainCam->Pos += FindVelocityFromTilt(&basicVR,basicVR.Layer[0],&trackingState);
+        basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, FindVelocityFromTilt(&basicVR,basicVR.Layer[0],&trackingState));
 
         for (int eye = 0; eye < 2; eye++)
         {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();

@@ -29,6 +29,11 @@ limitations under the License.
 #include "OVR_Threads.h"
 #include "OVR_Timer.h"
 #include "OVR_DebugHelp.h"
+#include <new>
+
+#if defined(_MSC_VER)
+    #include <new.h>
+#endif
 
 #ifdef OVR_OS_MS
     #pragma warning(push, 0)
@@ -38,6 +43,13 @@ limitations under the License.
 
 namespace OVR {
 
+
+
+//-----------------------------------------------------------------------------
+// Initialization/Shutdown state
+// If true, then Destroy() was called and is in the process of executing
+// Added to fix race condition if thread is started after the call to System::Destroy()
+static bool ShuttingDown = false;
 
 //-----------------------------------------------------------------------------
 // Initialization/Shutdown Callbacks
@@ -52,40 +64,75 @@ static Lock& GetSSILock()
 
 void SystemSingletonInternal::RegisterDestroyCallback()
 {
-    Lock::Locker locker(&GetSSILock());
+    GetSSILock().DoLock();
+    if (ShuttingDown)
+    {
+        GetSSILock().Unlock();
 
-    // Insert the listener at the front of the list (top of the stack). This is an analogue of a C++ forward_list::push_front or stack::push.
-    NextShutdownSingleton = SystemShutdownListenerList;
-    SystemShutdownListenerList = this;
+        OnThreadDestroy();
+    }
+    else
+    {
+        GetSSILock().Unlock();
+
+        // Insert the listener at the front of the list (top of the stack). This is an analogue of a C++ forward_list::push_front or stack::push.
+        NextShutdownSingleton = SystemShutdownListenerList;
+        SystemShutdownListenerList = this;
+    }
 }
 
 
 //-----------------------------------------------------------------------------
 // System
 
-// Initializes System core, installing allocator.
-void System::Init(Log* log, Allocator *palloc)
-{    
-    if (!Allocator::GetInstance())
-    {
-        if (Allocator::IsTrackingLeaks())
-        {
-            SymbolLookup::Initialize();
-        }
+static int System_Init_Count = 0;
 
+#if defined(_MSC_VER)
+    int OVRNewFailureHandler(size_t /*size*/)
+    {
+        throw ::std::bad_alloc();
+
+        // Disabled because otherwise a compiler warning is generated regarding unreachable code.
+        //return 0; // A return value of 0 tells the Standard Library to not retry the allocation.
+    }
+#endif
+
+
+// Initializes System core, installing allocator.
+void System::Init(Log* log)
+{
+    #if defined(_MSC_VER)
+        // Make it so that failure of the C malloc family of functions results in the same behavior as C++ operator new failure.
+        // This allows us to throw exceptions for malloc usage the same as for operator new bad_alloc.
+        _set_new_mode(1);
+
+        // Tells the standard library to direct new (and malloc) failures to us. Normally we wouldn't need to do this, as the 
+        // C++ Standard Library already throws bad_alloc on operator new failure. The problem is that the Standard Library doesn't
+        // throw bad_alloc upon malloc failure, and we can only intercept malloc failure via this means. _set_new_handler specifies
+        // a global handler for the current running Standard Library. If the Standard Library is being dynamically linked instead
+        // of statically linked, then this is a problem because a call to _set_new_handler would override anything the application
+        // has already set.
+        _set_new_handler(OVRNewFailureHandler);
+    #endif
+
+    if (++System_Init_Count == 1)
+    {
         Log::SetGlobalLog(log);
-        Allocator::setInstance(palloc);
         Timer::initializeTimerSystem();
     }
     else
     {
-        OVR_DEBUG_LOG(("[System] Init failed - duplicate call."));
+        OVR_DEBUG_LOG(("[System] Init recursively called; depth = %d", System_Init_Count));
     }
 }
 
 void System::Destroy()
-{    
-    if (Allocator::GetInstance())
+{
+    GetSSILock().DoLock();
+    ShuttingDown = true;
+    GetSSILock().Unlock();
+
+    if (--System_Init_Count == 0)
     {
         // Invoke all of the post-finish callbacks (normal case)
         for (SystemSingletonInternal *listener = SystemShutdownListenerList; listener; listener = listener->NextShutdownSingleton)
@@ -111,20 +158,11 @@ void System::Destroy()
 
         Timer::shutdownTimerSystem();
 
-		// Shutdown heap and destroy SysAlloc singleton, if any.
-        Allocator::GetInstance()->onSystemShutdown();
-        Allocator::setInstance(nullptr);
-
-        if (Allocator::IsTrackingLeaks())
-        {
-            SymbolLookup::Shutdown();
-        }
-
         Log::SetGlobalLog(Log::GetDefaultLog());
 
         if (Allocator::IsTrackingLeaks())
         {
-            int ovrLeakCount = DumpMemory(); 
+            int ovrLeakCount = Allocator::DumpMemory();
 
             OVR_ASSERT(ovrLeakCount == 0);
             if (ovrLeakCount == 0)
@@ -135,14 +173,18 @@ void System::Destroy()
     }
     else
     {
-        OVR_DEBUG_LOG(("[System] Destroy failed - System not initialized."));
+        OVR_DEBUG_LOG(("[System] Destroy recursively called; depth = %d", System_Init_Count));
     }
+
+    GetSSILock().DoLock();
+    ShuttingDown = false;
+    GetSSILock().Unlock();
 }
 
 // Returns 'true' if system was properly initialized.
 bool System::IsInitialized()
 {
-    return Allocator::GetInstance() != nullptr;
+    return System_Init_Count > 0;
 }
 
 

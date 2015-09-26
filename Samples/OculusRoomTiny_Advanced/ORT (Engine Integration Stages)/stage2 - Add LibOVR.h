@@ -7,20 +7,19 @@
 #define STAGE2_InitSDK     ovrResult result = ovr_Initialize(nullptr);                                     \
                            VALIDATE(result == ovrSuccess, "Failed to initialize libOVR.");                 \
                            ovrHmd HMD;                                                                     \
-                           result = ovrHmd_Create(0, &HMD);                                                \
-                           if (result != ovrSuccess) result = ovrHmd_CreateDebug(ovrHmd_DK2, &HMD);        \
+						   ovrGraphicsLuid luid;                                                           \
+                           result = ovr_Create(&HMD, &luid);                                               \
                            VALIDATE(result == ovrSuccess, "Oculus Rift not detected.");                    \
-                           VALIDATE(HMD->ProductName[0] != '\0', "Rift detected, display not enabled.");
+                           ovrHmdDesc HMDInfo = ovr_GetHmdDesc(HMD);
 
-
-#define STAGE2_ReleaseSDK  ovrHmd_Destroy(HMD);                                                            \
+#define STAGE2_ReleaseSDK  ovr_Destroy(HMD);                                                               \
                            ovr_Shutdown();
 
 // Actual code
 //============
 {
-    STAGE1_InitEngine;
     STAGE2_InitSDK                 /*NEW*/
+    STAGE1_InitEngine(L"Stage2", &luid);
     STAGE1_InitModelsAndCamera;
     STAGE1_MainLoopReadingInput
     {

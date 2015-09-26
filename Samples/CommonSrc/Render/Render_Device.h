@@ -137,16 +137,23 @@ enum TextureFormat
     Texture_DXT1            = 0x1100,
     Texture_DXT3            = 0x1200,
     Texture_DXT5            = 0x1300,
-    Texture_Depth           = 0x8000,
-    Texture_TypeMask        = 0xff00,
+    
+    Texture_Depth32f        = 0x10000,   // aliased as default Texture_Depth
+    Texture_Depth24Stencil8 = 0x20000,
+    Texture_Depth32fStencil8= 0x40000,
+    Texture_Depth16         = 0x80000,
+	
+    Texture_DepthMask       = 0xf0000,
+    Texture_TypeMask        = 0xfff00,
     Texture_Compressed      = 0x1000,
     Texture_SamplesMask     = 0x00ff,
-	Texture_RenderTarget    = 0x10000,
-	Texture_SampleDepth		= 0x20000,
-    Texture_GenMipmaps      = 0x40000,
-    Texture_SRGB			= 0x80000,
-    Texture_Mirror          = 0x100000,
-    Texture_SwapTextureSet  = 0x200000,
+
+    Texture_RenderTarget    = 0x100000,
+	Texture_SampleDepth		= 0x200000,
+    Texture_GenMipmaps      = 0x400000,
+    Texture_SRGB			= 0x800000,
+    Texture_Mirror          = 0x1000000,
+    Texture_SwapTextureSet  = 0x2000000,
 };
 
 enum SampleMode
@@ -367,6 +374,7 @@ public:
     virtual int GetWidth() const = 0;
     virtual int GetHeight() const = 0;
     virtual int GetSamples() const { return 1; }
+    virtual int GetFormat() const = 0;
 
     virtual void SetSampleMode(int sm) = 0;
     virtual void Set(int slot, ShaderStage stage = Shader_Fragment) const = 0;
@@ -520,13 +528,24 @@ struct LightingParams
     void Set(ShaderSet* s) const;
 };
 
+class AdapterNotFoundException
+{
+
+};
+
+class SwapChainCreationFailedException
+{
+
+};
+
 //-----------------------------------------------------------------------------------
 
 class Model : public Node
 {
 public:
+    String            AssetName;
     Array<Vertex>     Vertices;
-    Array<uint16_t>     Indices;
+    Array<uint16_t>   Indices;
     PrimitiveType     Type;
     Ptr<class Fill>   Fill;
     bool              Visible;
@@ -537,7 +556,12 @@ public:
     Ptr<Buffer>       VertexBuffer;
     Ptr<Buffer>       IndexBuffer;
 
-    Model(PrimitiveType t = Prim_Triangles) : Type(t), Fill(NULL), Visible(true), IsCollisionModel(false) { }
+    Model(PrimitiveType t = Prim_Triangles, const char* assetName = nullptr)
+        : Type(t), AssetName(), Fill(NULL), Visible(true), IsCollisionModel(false)
+    {
+        AssetName = "Model: ";
+        AssetName.AppendString(assetName);
+    }
     ~Model() { }
 
     virtual NodeType GetType() const { return Node_Model; }
@@ -852,9 +876,9 @@ public:
 
     // Resources
     virtual Buffer*  CreateBuffer() { return NULL; }
-    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1)
+    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr)
     {
-        OVR_UNUSED5(format, width, height, data, mipcount); return NULL;
+        OVR_UNUSED6(format, width, height, data, mipcount, error); return NULL;
     }
 
     virtual bool     GetSamplePositions(Render::Texture*, Vector3f* pos) { pos[0] = Vector3f(0); return 1; }
@@ -893,6 +917,15 @@ public:
     // The data is not copied, it must remain valid until the end of the frame
     virtual void SetLighting(const LightingParams* light);
 
+    enum CullMode
+    {
+        Cull_Off,
+        Cull_Back,
+        Cull_Front,
+    };
+
+    virtual void SetCullMode(CullMode cullMode) = 0;
+
     // The index 0 is reserved for non-buffer uniforms, and so cannot be used with this function.
     virtual void SetCommonUniformBuffer(int i, Buffer* buffer) { OVR_UNUSED2(i, buffer); }
 
@@ -906,7 +939,6 @@ public:
                         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles, MeshType meshType = Mesh_Scene) = 0;
     virtual void RenderWithAlpha(const Fill* fill, Render::Buffer* vertices, Render::Buffer* indices,
                         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles) = 0;
-    virtual void RenderCompute(const Fill* fill, Render::Buffer* buffer, int invocationSizeInPixels ) = 0;
 
     // Returns width of text in same units as drawing. If strsize is not null, stores width and height.
     // Can optionally return char-range selection rectangle.
@@ -1020,9 +1052,17 @@ int GetTextureSize(int format, int w, int h);
 // Image size must be a power of 2.
 void FilterRgba2x2(const uint8_t* src, int w, int h, uint8_t* dest);
 
-Texture* LoadTextureTgaTopDown (RenderDevice* ren, File* f, unsigned char alpha = 255, bool generatePremultAlpha = false, bool createSwapTextureSet = false);
-Texture* LoadTextureTgaBottomUp(RenderDevice* ren, File* f, unsigned char alpha = 255, bool generatePremultAlpha = false, bool createSwapTextureSet = false);
-Texture* LoadTextureDDSTopDown (RenderDevice* ren, File* f);
+enum TextureLoadFlags
+{
+    TextureLoad_SrgbAware           = 0x0001,
+    TextureLoad_Anisotropic         = 0x0002,
+    TextureLoad_MakePremultAlpha    = 0x0004,
+    TextureLoad_SwapTextureSet      = 0x0008,
+};
+
+Texture* LoadTextureTgaTopDown (RenderDevice* ren, File* f, int textureLoadFlags, unsigned char alpha = 255);
+Texture* LoadTextureTgaBottomUp(RenderDevice* ren, File* f, int textureLoadFlags, unsigned char alpha = 255);
+Texture* LoadTextureDDSTopDown (RenderDevice* ren, File* f, int textureLoadFlags);
 
 
 }} // namespace OVR::Render

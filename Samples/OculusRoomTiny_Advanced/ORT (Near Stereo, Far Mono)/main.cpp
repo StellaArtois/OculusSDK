@@ -30,8 +30,8 @@ limitations under the License.
 /// when this is disengaged.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
-#include "..\Common\Win32_BasicVR.h"         // Basic VR
+#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
+#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
@@ -40,16 +40,17 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 
     // Ensure symmetrical FOV for simplest monoscopic. 
     ovrFovPort newFov[2];
-    newFov[0].UpTan    = max(basicVR.HMD->DefaultEyeFov[0].UpTan,    basicVR.HMD->DefaultEyeFov[1].UpTan);
-    newFov[0].DownTan  = max(basicVR.HMD->DefaultEyeFov[0].DownTan,  basicVR.HMD->DefaultEyeFov[1].DownTan);
-    newFov[0].LeftTan  = max(basicVR.HMD->DefaultEyeFov[0].LeftTan,  basicVR.HMD->DefaultEyeFov[1].LeftTan);
-    newFov[0].RightTan = max(basicVR.HMD->DefaultEyeFov[0].RightTan, basicVR.HMD->DefaultEyeFov[1].RightTan);
+    newFov[0].UpTan    = max(basicVR.HmdDesc.DefaultEyeFov[0].UpTan,    basicVR.HmdDesc.DefaultEyeFov[1].UpTan);
+    newFov[0].DownTan  = max(basicVR.HmdDesc.DefaultEyeFov[0].DownTan,  basicVR.HmdDesc.DefaultEyeFov[1].DownTan);
+    newFov[0].LeftTan  = max(basicVR.HmdDesc.DefaultEyeFov[0].LeftTan,  basicVR.HmdDesc.DefaultEyeFov[1].LeftTan);
+    newFov[0].RightTan = max(basicVR.HmdDesc.DefaultEyeFov[0].RightTan, basicVR.HmdDesc.DefaultEyeFov[1].RightTan);
     newFov[1] = newFov[0];
     basicVR.Layer[0] = new VRLayer(basicVR.HMD,newFov);
 
     // We create an extra eye buffer, a means to render it
-    Texture monoEyeTexture(true, basicVR.Layer[0]->pEyeRenderTexture[0]->Size);
-    Model   renderEyeTexture(&monoEyeTexture, -1, -1, 1, 1);
+     
+    auto monoEyeTexture = new Texture(true, basicVR.Layer[0]->pEyeRenderTexture[0]->SizeW, basicVR.Layer[0]->pEyeRenderTexture[0]->SizeH);
+    auto renderEyeTexture = new Model(new Material(monoEyeTexture), -1, -1, 1, 1);
 
     // Main loop
     while (basicVR.HandleMessages())
@@ -70,7 +71,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
         ovrTrackingState ots = basicVR.Layer[0]->GetEyePoses(0, 0, &newIPD);
 
         // Render the monoscopic far part into our buffer, with a tiny overlap to avoid a 'stitching line'.
-        basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,0, monoEyeTexture.TexRtv, &ots.HeadPose.ThePose, 1, 1, 1, 1, 1,
+        basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,0, monoEyeTexture->TexRtv, &ots.HeadPose.ThePose, 1, 1, 1, 1, 1,
                                        switchPoint+(visible?0.1f:-0.1f), 1000.0f);
 
         for (int eye = 0; eye < 2; eye++)
@@ -80,26 +81,31 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
             DIRECTX.SetAndClearRenderTarget(basicVR.Layer[0]->pEyeRenderTexture[eye]->TexRtv[texIndex],
                 basicVR.Layer[0]->pEyeDepthBuffer[eye]);
 
-            DIRECTX.SetViewport(Recti(basicVR.Layer[0]->EyeRenderViewport[eye]));
+			DIRECTX.SetViewport((float)basicVR.Layer[0]->EyeRenderViewport[eye].Pos.x,
+				(float)basicVR.Layer[0]->EyeRenderViewport[eye].Pos.y,
+				(float)basicVR.Layer[0]->EyeRenderViewport[eye].Size.w,
+				(float)basicVR.Layer[0]->EyeRenderViewport[eye].Size.h);
 
             // Now render the mono part, but translated to ensure perfect matchup with 
             // the stereoscopic part.  If '5' pressed, then turn it off
             float translation = newIPD / ((newFov[0].LeftTan + newFov[0].RightTan)*switchPoint);
             if (DIRECTX.Key['5']) translation = 0;
-            Matrix4f translateMatrix = Matrix4f::Translation(Vector3f(eye ? -translation : translation, 0, 0));
-            renderEyeTexture.Render(translateMatrix, 1, visible ? 0.5f : 1, 1, 1, true);
+            XMMATRIX translateMatrix = XMMatrixTranslation(eye ? -translation : translation, 0, 0);
+            renderEyeTexture->Render(&translateMatrix, 1, visible ? 0.5f : 1, 1, 1, true);
 
             // Zero the depth buffer, to ensure the stereo part is rendered in the foreground
             DIRECTX.Context->ClearDepthStencilView(basicVR.Layer[0]->pEyeDepthBuffer[eye]->TexDsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 
             // Render the near stereoscopic part of the scene,
             // and making sure we don't clear the render target, as we would normally.
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene,eye, 0, 0, 1,1, 1, 1, 1, 0.2f, switchPoint, false);
+            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye, 0, 0, 1,1, 1, 1, 1, 0.2f, switchPoint, false);
         }
 
         basicVR.Layer[0]->PrepareLayerHeader();
         basicVR.DistortAndPresent(1);
     }
+
+    delete renderEyeTexture;
 
     return (basicVR.Release(hinst));
 }

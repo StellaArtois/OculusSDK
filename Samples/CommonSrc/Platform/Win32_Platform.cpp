@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "Kernel/OVR_Win32_IncludeWindows.h"
 #include <mmsystem.h>
+#include <vector>
 
 #include "Kernel/OVR_System.h"
 #include "Kernel/OVR_Array.h"
@@ -61,6 +62,7 @@ void* PlatformCore::SetupWindow(int w, int h)
     wc.lpfnWndProc   = systemWindowProc;
     wc.cbWndExtra    = sizeof(PlatformCore*);
     wc.hbrBackground = (HBRUSH)::GetStockObject(BLACK_BRUSH);
+    wc.hIcon         = LoadIconW(::GetModuleHandleW(NULL), MAKEINTRESOURCEW(101));
 
     RegisterClassW(&wc);
 
@@ -151,12 +153,59 @@ void PlatformCore::GetWindowSize(int* w, int* h) const
     *h = Height;
 }
 
+void PlatformCore::SetWindowSize(int w, int h)
+{
+    WINDOWINFO wInfo;
+    wInfo.cbSize = sizeof(WINDOWINFO);
+    ::GetWindowInfo(hWnd, &wInfo);
+
+    Width = w;
+    Height = h;
+
+    RECT winSize;
+    winSize.left = 0;
+    winSize.top = 0;
+    winSize.right = Width;
+    winSize.bottom = Height;
+    ::AdjustWindowRect(&winSize, wInfo.dwStyle, false);
+
+    Sizei fullWindowSize(winSize.right - winSize.left, winSize.bottom - winSize.top);
+
+    wInfo.rcWindow.right = wInfo.rcWindow.left + fullWindowSize.w;
+    wInfo.rcWindow.bottom = wInfo.rcWindow.top + fullWindowSize.h;
+
+    SetWindowPos(hWnd, nullptr, wInfo.rcWindow.left, wInfo.rcWindow.top, fullWindowSize.w, fullWindowSize.h, 0);
+}
 
 void PlatformCore::SetWindowTitle(const char* title)
 {
     WindowTitle = title;
     if (hWnd)
     ::SetWindowTextA(hWnd, title);
+}
+
+String PlatformCore::GetContentDirectory() const
+{
+    std::vector<WCHAR> path(MAX_PATH);
+
+    DWORD size = GetModuleFileNameW(NULL, &path[0], static_cast<DWORD>(path.size()));
+    // if we filled the buffer, resize and try again
+    while (size == path.size())
+    {
+        path.resize(path.size() * 2);
+        size = GetModuleFileNameW(NULL, &path[0], static_cast<DWORD>(path.size()));
+    }
+
+    // truncate path at last slash
+    int last = 0;
+    for (int i = 0; (i < int(path.size())) && path[i]; ++i)
+    {
+        if (path[i] == '\\')
+            last = i;
+    }
+    path[last] = '\0';
+
+    return String(&path[0]);
 }
 
 static uint8_t KeyMap[][2] = 
@@ -407,18 +456,18 @@ LRESULT PlatformCore::WindowProc(UINT msg, WPARAM wp, LPARAM lp)
         // Change window size as long as we're not being minimized. 
         if (wp != SIZE_MINIMIZED)
         {
-        Width = LOWORD(lp);
-        Height = HIWORD(lp);
-        if (pRender)
-            pRender->SetWindowSize(Width, Height);
+            Width = LOWORD(lp);
+            Height = HIWORD(lp);
+            if (pRender)
+                pRender->SetWindowSize(Width, Height);
 
-        for (int i = 0; i< NotificationOverlays.GetSizeI(); i++)
-        {
-            if (NotificationOverlays[i])
-                NotificationOverlays[i]->UpdateOnWindowSize();
-        }
+            for (int i = 0; i < NotificationOverlays.GetSizeI(); i++)
+            {
+                if (NotificationOverlays[i])
+                    NotificationOverlays[i]->UpdateOnWindowSize();
+            }
 
-        pApp->OnResize(Width,Height);
+            pApp->OnResize(Width, Height);
         }
         break;
 
@@ -478,12 +527,12 @@ int PlatformCore::Run()
 
 
 RenderDevice* PlatformCore::SetupGraphics(ovrHmd hmd, const SetupGraphicsDeviceSet& setupGraphicsDesc,
-                                          const char* type, const Render::RendererParams& rp)
+                                          const char* type, const Render::RendererParams& rp, ovrGraphicsLuid luid)
 {
     const SetupGraphicsDeviceSet* setupDesc = setupGraphicsDesc.PickSetupDevice(type);
     OVR_ASSERT(setupDesc);
 
-    pRender = *setupDesc->pCreateDevice(hmd, rp, (void*)hWnd);
+    pRender = *setupDesc->pCreateDevice(hmd, rp, (void*)hWnd, luid);
     if (pRender)
         pRender->SetWindowSize(Width, Height);
 
@@ -634,6 +683,6 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE prevInst, LPSTR inArgs, int show)
     g_app = 0;
 
     // If this assert fires, then look at the debug output to see what memory is leaking
-    OVR_ASSERT(!_CrtDumpMemoryLeaks());
+    // OVR_ASSERT(!_CrtDumpMemoryLeaks());
     return exitCode;
 }

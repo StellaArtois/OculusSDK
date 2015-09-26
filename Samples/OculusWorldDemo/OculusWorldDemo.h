@@ -50,13 +50,7 @@ limitations under the License.
 // Filename to be loaded by default, searching specified paths.
 #define WORLDDEMO_ASSET_FILE  "Tuscany.xml"
 
-#define WORLDDEMO_ASSET_PATH1 "Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH2 "../Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH3 "../../Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH4 "../../../Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH5 "../../../../Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH6 "../../../../../Assets/Tuscany/"
-#define WORLDDEMO_ASSET_PATH7 "Samples/OculusWorldDemo/Assets/Tuscany/" // This path allows the shortcut to work.
+#define WORLDDEMO_ASSET_PATH "Assets/Tuscany/"
 
 using namespace OVR;
 using namespace OVR::OvrPlatform;
@@ -115,7 +109,13 @@ public:
     virtual void OnKey(OVR::KeyCode key, int chr, bool down, int modifiers);
     virtual void OnResize(int width, int height);
 
-    bool         SetupWindowAndRendering(int argc, const char** argv);
+    bool         SetupWindowAndRendering(bool firstTime, int argc, const char** argv, ovrGraphicsLuid luid);
+    void         SetCommandLineMenuOption(int argc, const char** argv);     // Set menu options using inputs from the command line
+
+    int          InitializeRendering(bool firstTime);
+    void         DestroyRendering();
+
+    bool         HandleOvrError(ovrResult error);   // returns TRUE for error out, FALSE otherwise
 
     // Adds room model to scene.
     void         InitMainFilePath();
@@ -123,22 +123,25 @@ public:
     void         PopulatePreloadScene();
     void		 ClearScene();
     void         PopulateOptionMenu();
+    bool         SetMenuValue ( String menuFullName, String newValue );
 
 
     // Computes all of the Hmd values and configures render targets.
-    void         CalculateHmdValues();
+    ovrResult    CalculateHmdValues();
     // Returns the actual size present.
-    Sizei        EnsureRendertargetAtLeastThisBig (int rtNum, Sizei size);
+    Sizei        EnsureRendertargetAtLeastThisBig (int rtNum, Sizei size, ovrResult& error);
 
 
     // Renders HUD/menu overlays; 2D viewport must be set before call.
     Recti        RenderTextInfoHud(float textHeight);
     Recti        RenderMenu(float textHeight);
+    Recti        RenderTouchStateHud(float cx, float xy, float textHeight);    
 
     // Renders full stereo scene for one eye.
     void         RenderEyeView(ovrEyeType eye, Posef playerTorso);
     void         RenderAnimatedBlocks(ovrEyeType eye, double appTime);
     void         RenderGrid(ovrEyeType eye, Recti viewport);
+    void         RenderControllers(ovrEyeType eye);
     void         RenderCockpitPanels(ovrEyeType eye, Posef playerTorso);
 
     Matrix4f     CalculateViewFromPose(const Posef& pose);
@@ -156,12 +159,19 @@ public:
     // Processes DeviceNotificationStatus queue to handles plug/unplug.
     void         ProcessDeviceNotificationQueue();
 
+    void         DisplayLastErrorMessageBox(const char* pMessage);
+
     // ***** Callbacks for Menu option changes
 
     // These contain extra actions to be taken in addition to switching the state.
     void HmdSettingChange(OptionVar* = 0)   { HmdSettingsChanged = true; }
     void MirrorSettingChange(OptionVar* = 0)
     { HmdSettingsChanged = true; NotificationTimeout = ovr_GetTimeInSeconds() + 10.0f;}
+
+    void PerfHudSettingChange(OptionVar* = 0) { ovr_SetInt(Hmd, OVR_PERF_HUD_MODE, (int)PerfHudMode); }
+
+    void DebugHudSettingModeChange(OptionVar* = 0) { ovr_SetInt(Hmd, OVR_DEBUG_HUD_STEREO_MODE, (int)DebugHudStereoMode); }
+    void DebugHudSettingQuadPropChange(OptionVar* = 0);
 
     void BlockShowChange(OptionVar* = 0)    { BlocksCenter = ThePlayer.BodyPos; }
     void EyeHeightChange(OptionVar* = 0)
@@ -170,11 +180,13 @@ public:
         ThePlayer.BodyPos.y = ThePlayer.GetScaledEyeHeight();
     }
 
-    void HmdSensorToggle(OptionVar* = 0);
     void HmdSettingChangeFreeRTs(OptionVar* = 0);
-    void MultisampleChange(OptionVar* = 0);
+    void RendertargetFormatChange(OptionVar* = 0);
+    void SrgbRequestChange(OptionVar* = 0);
     void CenterPupilDepthChange(OptionVar* = 0);
     void DistortionClearColorChange(OptionVar* = 0);
+    void WindowSizeChange(OptionVar* = 0);
+    void WindowSizeToNativeResChange(OptionVar* = 0);
 
     void ResetHmdPose(OptionVar* = 0);
 
@@ -182,14 +194,20 @@ protected:
     ExceptionHandler     OVR_ExceptionHandler;
     GUIExceptionListener OVR_GUIExceptionListener;
 
+    int                 Argc;
+    const char**        Argv;
+
     RenderDevice*       pRender;
     RendererParams      RenderParams;
     Sizei               WindowSize;
-    int                 ScreenNumber;
+    bool                HmdDisplayAcquired;
     int                 FirstScreenInCycle;
-    bool                SupportsSrgb;
+    bool                SupportsSrgbSwitching;
     bool                SupportsMultisampling;
     bool                SupportsDepthMultisampling;
+    float               ActiveGammaCurve;
+    float               SrgbGammaCurve;
+    bool                MirrorIsSrgb;
 
     struct RenderTarget
     {
@@ -213,6 +231,7 @@ protected:
     // ***** Oculus HMD Variables
 
     ovrHmd              Hmd;
+    ovrHmdDesc          HmdDesc;
     ovrEyeRenderDesc    EyeRenderDesc[2];
     Matrix4f            Projection[2];          // Projection matrix for eye.
     Matrix4f            OrthoProjection[2];     // Projection for 2D.
@@ -254,6 +273,7 @@ protected:
     } LoadingState;
 
     // Current status flags so that edges can be reported
+    bool                InteractiveMode;        // If true then we assume a user is present, else this app is assumed to be running unattended.
     bool                HaveVisionTracking;
     bool                HavePositionTracker;
     bool                HaveHMDConnected;
@@ -269,8 +289,12 @@ protected:
     Scene               MainScene;
     Scene               LoadingScene;
     Scene               SmallGreenCube;
+    Scene               SmallOculusCube;
+    Scene               SmallOculusRedCube;
+    Scene               SmallOculusBlueCube;
 
     Scene				OculusCubesScene;
+	Scene               ControllerScene;
     Scene               RedCubesScene;
     Scene				BlueCubesScene;
 
@@ -292,7 +316,7 @@ protected:
     // Last frame asn sensor data reported by BeginFrame().
     ovrFrameTiming      HmdFrameTiming;
     unsigned            HmdStatus;
-
+  
     // Overlay notifications time out in
     double              NotificationTimeout;
 
@@ -306,10 +330,16 @@ protected:
     bool                DynamicRezScalingEnabled;
     bool                EnableSensor;
 
+
+
+    // Recorded tracking and input state, for rendering and reporting the state.
+    bool                HasInputState;
+    ovrInputState       InputState;
+    ovrPosef            HandPoses[2];
+
     // The size of the rendered HUD in pixels. If size==0, there's no HUD at the moment.
     Recti               HudRenderedSize;
     Recti               MenuRenderedSize;
-    float               MenuHudTextPixelHeight;
 
     enum MonoscopicMode
     {
@@ -335,6 +365,15 @@ protected:
     };
     DepthMod            DepthModifier;
 
+    enum DepthFormatOpt
+    {
+        DepthFormatOption_D32f,
+        DepthFormatOption_D24_S8,
+        DepthFormatOption_D16,
+        DepthFormatOption_D32f_S8,
+    };
+    DepthFormatOpt DepthFormatOption;
+
     enum SceneRenderCountEnum
     {
         SceneRenderCount_FixedLow,
@@ -346,7 +385,41 @@ protected:
     } SceneRenderCountType;
     int32_t             SceneRenderCountLow;
     int32_t             SceneRenderCountHigh;
+    float               SceneRenderWasteCpuTimePreRender;
+    float               SceneRenderWasteCpuTimeEachRender;
+    float               SceneRenderWasteCpuTimePreSubmit;
+
+    enum DrawFlushModeEnum
+    {
+        DrawFlush_Off,
+        DrawFlush_AfterEachEyeRender,
+        DrawFlush_AfterEyePairRender,
+    };
+    DrawFlushModeEnum   DrawFlushMode;
+    int32_t             DrawFlushCount;
+
+    void FlushIfApplicable(DrawFlushModeEnum flushMode, int& currDrawFlushCount);
+
+    enum MenuHudMovementModeEnum
+    {
+        MenuHudMove_FixedToFace,
+        MenuHudMove_DragAtEdge,
+        MenuHudMove_RecenterAtEdge,
+
+        MenuHudMove_LAST,
+    } MenuHudMovementMode;
+    float               MenuHudMovementRadius;
+    float               MenuHudMovementDistance;
+    float               MenuHudMovementRotationSpeed;
+    float               MenuHudMovementTranslationSpeed;
+    float               MenuHudTextPixelHeight;
+    float               MenuHudDistance;
+    float               MenuHudSize;
+    // if head pitch < MenuHudMaxPitchToOrientToHeadRoll, then we ignore head roll on menu orientation
+    float               MenuHudMaxPitchToOrientToHeadRoll;
+	bool				MenuHudAlwaysOnMirrorWindow;
     
+    bool                TimewarpRenderIntervalEnabled;
     float               TimewarpRenderIntervalInSeconds;
     bool                FreezeEyeUpdate;
     bool                FreezeEyeOneFrameRendered;
@@ -371,9 +444,10 @@ protected:
     // Other global settings.
     float               CenterPupilDepthMeters;
     bool                ForceZeroHeadMovement;
-    bool                VsyncEnabled;
     bool                MultisampleRequested;       // What the menu option is set to.
     bool                MultisampleEnabled;         // Did we actually get it?
+    bool                SrgbRequested;
+    bool                AnisotropicSample;
     bool                TextureOriginAtBottomLeft;
 #if defined(OVR_OS_LINUX)
     bool                LinuxFullscreenOnDevice;
@@ -395,6 +469,25 @@ protected:
 
     // Logging
     bool                IsLogging;
+
+    ovrPerfHudMode      PerfHudMode;
+
+    enum DebugHudStereoPresetEnum
+    {
+        DebugHudStereoPreset_Free,
+        DebugHudStereoPreset_Off,
+        DebugHudStereoPreset_OneMeterTwoMetersAway,
+        DebugHudStereoPreset_HugeAndBright,
+        DebugHudStereoPreset_HugeAndDim,
+
+        DebugHudStereoPreset_Count,
+    }                       DebugHudStereoPresetMode;
+    ovrDebugHudStereoMode   DebugHudStereoMode;
+    Vector3f                DebugHudStereoGuidePosition;
+    Vector2f                DebugHudStereoGuideSize;
+    Vector3f                DebugHudStereoGuideYawPitchRollDeg;
+    Vector3f                DebugHudStereoGuideYawPitchRollRad;
+    Vector4f                DebugHudStereoGuideColor;
 
     // ***** Scene Rendering Modes
 
@@ -432,16 +525,32 @@ protected:
         Text_None,
         Text_Info,
         Text_Timing,
+        Text_TouchState,
         Text_Help1,
         Text_Help2,
         Text_Count
     };
     TextScreen          TextScreen;
 
+    enum ComfortTurnModeEnum
+    {
+        ComfortTurn_Off,
+        ComfortTurn_30Degrees,
+        ComfortTurn_45Degrees,
+
+        ComfortTurn_LAST
+    }                   ComfortTurnMode;
+
     // Whether we are displaying animated blocks and what type.
     int                 BlocksShowType;
+    int                 BlocksShowMeshType;
     float               BlocksSpeed;
     Vector3f            BlocksCenter;
+    Vector3f            BlocksSize;
+    int                 BlocksHowMany;
+    float               BlocksMovementRadius;
+    int                 BlocksMovementType;
+    float               BlocksMovementScale;
 
 
     // User configurable options, brought up by 'Tab' key.
@@ -485,6 +594,12 @@ protected:
     ovrLayerQuad        HudLayer;
     ovrLayerQuad        MenuLayer;
     ovrLayerDirect      DebugLayer;
+
+    // Menu position & state info.
+    Posef               MenuPose;
+    bool                MenuIsRotating;
+    bool                MenuIsTranslating;
+    Vector3f            MenuTranslationOffset;
 };
 
 

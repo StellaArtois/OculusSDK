@@ -73,6 +73,9 @@
     <ClInclude Include="..\..\..\Src\Kernel\OVR_Types.h" />
     <ClInclude Include="..\..\..\Src\Kernel\OVR_UTF8Util.h" />
     <ClInclude Include="..\..\..\Src\Kernel\OVR_Win32_IncludeWindows.h" />
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameEventData.h" />
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameListener.h" />
+    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameUtils.h" />
     <ClInclude Include="..\..\..\Src\Tracing\LibOVREvents.h" />
     <ClInclude Include="..\..\..\Src\Tracing\Tracing.h" />
     <ClInclude Include="..\..\..\Src\Util\Util_D3D11_Blitter.h" />
@@ -111,6 +114,9 @@
     <ClCompile Include="..\..\..\Src\Kernel\OVR_ThreadsWinAPI.cpp" />
     <ClCompile Include="..\..\..\Src\Kernel\OVR_Timer.cpp" />
     <ClCompile Include="..\..\..\Src\Kernel\OVR_UTF8Util.cpp" />
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameEventData.cpp" />
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameListener.cpp" />
+    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameUtils.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_D3D11_Blitter.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_Direct3D.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_GL_Blitter.cpp" />
@@ -411,7 +417,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -436,7 +442,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -463,7 +469,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnablePREfast>false</EnablePREfast>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -490,7 +496,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnablePREfast>false</EnablePREfast>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -519,7 +525,7 @@
       <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <TreatWarningAsError>true</TreatWarningAsError>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -551,7 +557,7 @@
       <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <TreatWarningAsError>true</TreatWarningAsError>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -583,7 +589,7 @@
       <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <TreatWarningAsError>true</TreatWarningAsError>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>

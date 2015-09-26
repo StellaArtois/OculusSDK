@@ -69,23 +69,54 @@ bool VerifyHRESULT(const char* file, int line, HRESULT hr);
 
 #define OVR_D3D_CHECK(hr) OVR::D3DUtil::VerifyHRESULT(__FILE__, __LINE__, hr)
 
-// Returns provided value on failure
-#define OVR_D3D_CHECK_RET_VAL(hr, failureValue) \
-    { \
-        if (!OVR_D3D_CHECK(hr)) \
-        { \
-            return failureValue; \
-        } \
+// Internal implementation of the OVR_D3D_CHECK_RET family of functions.
+#define OVR_D3D_CHECK_RET_IMPL(hr, returnExpression) \
+    {                                                \
+        if (!OVR_D3D_CHECK(hr))                      \
+        {                                            \
+            returnExpression                         \
+        }                                            \
     }
 
+// Returns provided value on failure.
+// Example usage:
+//     size_t Func() {
+//         . . .
+//         HRESULT hr = Device->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice.GetRawRef());
+//         OVR_D3D_CHECK_RET_VAL(hr, 0);
+//         . . .
+//     }
+#define OVR_D3D_CHECK_RET_VAL(hr, failureValue) OVR_D3D_CHECK_RET_IMPL(hr, return failureValue;)
+
 // Returns void on failure
-#define OVR_D3D_CHECK_RET(hr)       OVR_D3D_CHECK_RET_VAL(hr, ;)
+// Example usage:
+//     void Func() {
+//         . . .
+//         HRESULT hr = Device->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice.GetRawRef());
+//         OVR_D3D_CHECK_RET(hr);
+//         . . .
+//     }
+#define OVR_D3D_CHECK_RET(hr) OVR_D3D_CHECK_RET_IMPL(hr, return;)
 
 // Returns false on failure
-#define OVR_D3D_CHECK_RET_FALSE(hr) OVR_D3D_CHECK_RET_VAL(hr, false)
+// Example usage:
+//     bool Func() {
+//         . . .
+//         HRESULT hr = Device->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice.GetRawRef());
+//         OVR_D3D_CHECK_RET_FALSE(hr);
+//         . . .
+//     }
+#define OVR_D3D_CHECK_RET_FALSE(hr) OVR_D3D_CHECK_RET_IMPL(hr, return false;)
 
 // Returns nullptr on failure
-#define OVR_D3D_CHECK_RET_NULL(hr)  OVR_D3D_CHECK_RET_VAL(hr, nullptr)
+// Example usage:
+//     void* Func() {
+//         . . .
+//         HRESULT hr = Device->QueryInterface(__uuidof(IDXGIDevice), (void **)&pDXGIDevice.GetRawRef());
+//         OVR_D3D_CHECK_RET_NULL(hr);
+//         . . .
+//     }
+#define OVR_D3D_CHECK_RET_NULL(hr) OVR_D3D_CHECK_RET_IMPL(hr, return nullptr;)
 
 // If the result is a failure, it will write the exact compile error to the error log
 void LogD3DCompileError(HRESULT hr, ID3DBlob* errorBlob);

@@ -9,30 +9,32 @@
                                    ovrRecti      eyeRenderViewport[2];                                                                  \
                                    for (int eye = 0; eye < 2; eye++)                                                                    \
                                    {                                                                                                    \
-                                       Sizei idealSize = ovrHmd_GetFovTextureSize(HMD, (ovrEyeType)eye, HMD->DefaultEyeFov[eye], 1.0f); \
-                                       pEyeRenderTexture[eye] = new Texture(true, idealSize);                                           \
-                                       pEyeDepthBuffer[eye]   = new DepthBuffer(DIRECTX.Device, idealSize);                             \
-                                       eyeRenderViewport[eye].Pos  = Vector2i(0, 0);                                                    \
-                                       eyeRenderViewport[eye].Size = idealSize;                                                         \
+                                       ovrSizei idealSize = ovr_GetFovTextureSize(HMD, (ovrEyeType)eye, HMDInfo.DefaultEyeFov[eye], 1.0f); \
+                                       pEyeRenderTexture[eye] = new Texture(true, idealSize.w, idealSize.h);                            \
+                                       pEyeDepthBuffer[eye]   = new DepthBuffer(DIRECTX.Device, idealSize.w, idealSize.h);              \
+									   eyeRenderViewport[eye].Pos.x = 0;                                                                \
+									   eyeRenderViewport[eye].Pos.y = 0;                                                                \
+									   eyeRenderViewport[eye].Size = idealSize;                                                         \
                                    }
 
-#define STAGE3_ModelsToViewBuffers Model renderLeftEyeTexture(pEyeRenderTexture[0],-0.9f,-0.8f,-0.1f,+0.8f);                            \
-                                   Model renderRightEyeTexture(pEyeRenderTexture[1],+0.1f,-0.8f,+0.9f,+0.8f);  
+#define STAGE3_ModelsToViewBuffers Model renderLeftEyeTexture(new Material(pEyeRenderTexture[0]),-0.9f,-0.8f,-0.1f,+0.8f);              \
+                                   Model renderRightEyeTexture(new Material(pEyeRenderTexture[1]),+0.1f,-0.8f,+0.9f,+0.8f);  
 
 #define STAGE3_ForEachEye          for (int eye=0; eye<2 && isVisible;eye++)
 
 #define STAGE3_SetEyeRenderTarget  DIRECTX.SetAndClearRenderTarget(pEyeRenderTexture[eye]->TexRtv, pEyeDepthBuffer[eye]);               \
-                                   DIRECTX.SetViewport(Recti(eyeRenderViewport[eye]));
+	                               DIRECTX.SetViewport((float)eyeRenderViewport[eye].Pos.x, (float)eyeRenderViewport[eye].Pos.y,        \
+                                                       (float)eyeRenderViewport[eye].Size.w, (float)eyeRenderViewport[eye].Size.h);
 
-#define STAGE3_RenderEyeBuffers    renderLeftEyeTexture.Render (Matrix4f(),1,1,1,1,true);                                                           \
-                                   renderRightEyeTexture.Render(Matrix4f(),1,1,1,1,true);
+#define STAGE3_RenderEyeBuffers    renderLeftEyeTexture.Render (&XMMatrixIdentity(),1,1,1,1,true);                                      \
+	                               renderRightEyeTexture.Render(&XMMatrixIdentity(), 1, 1, 1, 1, true);
 
 
 // Actual code
 //============
 {
-    STAGE1_InitEngine;
     STAGE2_InitSDK
+    STAGE1_InitEngine(L"Stage3", &luid);
     STAGE3_CreateEyeBuffers             /*NEW*/
     STAGE3_ModelsToViewBuffers          /*NEW*/
     STAGE1_InitModelsAndCamera

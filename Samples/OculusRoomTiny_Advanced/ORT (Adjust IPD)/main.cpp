@@ -27,32 +27,39 @@ limitations under the License.
 #include "..\Common\Win32_DirectXAppUtil.h" // DirectX
 #include "..\Common\Win32_BasicVR.h"        // Basic VR
 
+struct AdjustIPD : BasicVR
+{
+    AdjustIPD(HINSTANCE hinst) : BasicVR(hinst, L"Adjust IPD") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+
+            float newIPD = 0.064f;
+            if (DIRECTX.Key['1']) newIPD = 0.05f;
+            if (DIRECTX.Key['2']) newIPD = 0.06f;
+            if (DIRECTX.Key['3']) newIPD = 0.07f;
+            if (DIRECTX.Key['4']) newIPD = 0.08f;
+            Layer[0]->GetEyePoses(0, 0, &newIPD);
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
+
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-
-        float newIPD = 0.064f;
-        if (DIRECTX.Key['1']) newIPD = 0.05f;
-        if (DIRECTX.Key['2']) newIPD = 0.06f;
-        if (DIRECTX.Key['3']) newIPD = 0.07f;
-        if (DIRECTX.Key['4']) newIPD = 0.08f;
-        basicVR.Layer[0]->GetEyePoses(0, 0, &newIPD);
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(basicVR.MainCam, basicVR.pRoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	AdjustIPD app(hinst);
+    return app.Run();
 }

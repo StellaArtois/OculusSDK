@@ -129,6 +129,7 @@ limitations under the License.
     #define TraceCameraBeginBlobSegmentation(camIdx, lastFrameNumber) EventWriteCameraBeginBlobSegmentation(camIdx, lastFrameNumber)
 
     // Trace the interesting parts of an ovrHmdDesc structure
+/*
     #define TraceHmdDesc(desc) \
         EventWriteHmdDesc( \
             (desc).Type, \
@@ -137,12 +138,46 @@ limitations under the License.
             (desc).SerialNumber, \
             (desc).FirmwareMajor, \
             (desc).FirmwareMinor, \
-            (desc).HmdCaps, \
-            (desc).TrackingCaps, \
-            0, \
-            0, \
-            0 \
+            (desc).AvailableHmdCaps, \
+            (desc).DefaultHmdCaps, \
+            (desc).AvailableTrackingCaps, \
+            (desc).DefaultTrackingCaps, \
+            (desc).Resolution.w, \
+            (desc).Resolution.h, \
+            (desc).DisplayRefreshRate \
         )
+        */
+    // What happened here?
+    #define TraceHmdDesc(desc) \
+        EventWriteHmdDesc(\
+        (desc).Type, \
+        (desc).VendorId, \
+        (desc).ProductId, \
+        (desc).SerialNumber, \
+        (desc).FirmwareMajor, \
+        (desc).FirmwareMinor, \
+        (desc).AvailableHmdCaps, \
+        (desc).AvailableTrackingCaps, \
+        (desc).Resolution.w, \
+        (desc).Resolution.h \
+        )
+    #define TraceHmdDisplay(dpy) \
+        EventWriteHmdDisplay( \
+            (0), \
+            (dpy).DeviceTypeGuess, \
+            (dpy).DisplayID.ToCStr(), \
+            (dpy).ModelName.ToCStr(), \
+            (dpy).EdidSerialNumber.ToCStr(), \
+            (dpy).LogicalResolutionInPixels.w, \
+            (dpy).LogicalResolutionInPixels.h, \
+            (dpy).NativeResolutionInPixels.w, \
+            (dpy).NativeResolutionInPixels.h, \
+            0, \
+            0, \
+            (dpy).DeviceNumber, \
+            (dpy).Rotation, \
+            (dpy).ApplicationExclusive \
+ )
 
     // Trace part of a JSON string (events have a 64k limit)
     #define TraceJSONChunk(Name, TotalChunks, ChunkSequence, TotalSize, ChunkSize, ChunkOffset, Chunk) \
@@ -202,13 +237,64 @@ limitations under the License.
         } \
         else ((void)0)
 
+    #define TracePosePrediction(OriginalPose, PredictedPose, PredictionTimeDeltaSeconds, CurrentTimeInSeconds, id) \
+        EventWritePosePrediction( \
+            &(OriginalPose).Translation.x, \
+            &(OriginalPose).Rotation.x, \
+            &(PredictedPose).Translation.x, \
+            &(PredictedPose).Rotation.x, \
+            (PredictionTimeDeltaSeconds), \
+            (CurrentTimeInSeconds), \
+            (id) \
+        )
+
     // Trace PoseLatching CPU pinned memory write
-    #define TracePoseLatchCPUWrite(ThreadId, Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, OVREventTime) \
-        EventWritePoseLatchCPUWrite(ThreadId, Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, OVREventTime)
+    #define TracePoseLatchCPUWrite(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast, StartPosition, EndPosition, StartQuat, EndQuat) \
+        EventWritePoseLatchCPUWrite(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast, StartPosition, EndPosition, StartQuat, EndQuat)
 
     // Trace PoseLatching GPU latch
-    #define TracePoseLatchGPULatchReadback(ThreadId, Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, OVREventTime) \
-        EventWritePoseLatchGPULatchReadback(ThreadId, Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, OVREventTime)
+    #define TracePoseLatchGPULatchReadback(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast) \
+        EventWritePoseLatchGPULatchReadback(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast)
+
+    #define TraceVSync(VSyncTime, FrameIndex, TWGpuEndTime) \
+        EventWriteVSync(VSyncTime, FrameIndex, TWGpuEndTime)
+
+    #define TraceAppCompositorFocus(Pid) \
+      EventWriteAppCompositorFocus(Pid)
+
+    #define TraceAppConnect(Pid) \
+      EventWriteAppConnect(Pid)
+
+    #define TraceAppDisconnect(Pid) \
+      EventWriteAppDisconnect(Pid)
+
+    #define TraceAppNoOp(Pid) \
+      EventWriteAppNoOp(Pid)
+
+    #define TraceLatencyTiming(LatencyTiming) \
+      EventWriteLatencyTiming( \
+          LatencyTiming.LatencyRenderCpuBegin, \
+          LatencyTiming.LatencyRenderCpuEnd, \
+          LatencyTiming.LatencyRenderIMU, \
+          LatencyTiming.LatencyTimewarpCpu, \
+          LatencyTiming.LatencyTimewarpLatched, \
+          LatencyTiming.LatencyTimewarpGpuEnd, \
+          LatencyTiming.LatencyPostPresent, \
+          LatencyTiming.ErrorRender, \
+          LatencyTiming.ErrorTimewarp \
+      )
+
+    #define TraceEndFrameAppTiming(AppTiming, DistortionGpuDuration) \
+      EventWriteEndFrameAppTiming( \
+          AppTiming.AppFrameIndex, \
+          AppTiming.AppRenderIMUTime, \
+          AppTiming.AppScanoutStartTime, \
+          AppTiming.AppGpuRenderDuration, \
+          AppTiming.AppBeginRenderingTime, \
+          AppTiming.AppEndRenderingTime, \
+          AppTiming.QueueAheadSeconds, \
+          DistortionGpuDuration \
+      )
 
 #else // OVR_ENABLE_ETW_TRACING
 
@@ -229,12 +315,23 @@ limitations under the License.
     #define TraceCameraEndProcessing(cfd) ((void)0)
     #define TraceCameraSkippedFrames(requestNumber, frameCount, lastFrameNumber) ((void)0)
     #define TraceHmdDesc(desc) ((void)0)
+    #define TraceHmdDisplay(extended, dpy) ((void)0)
     #define TraceJSONChunk(Name, TotalChunks, ChunkSequence, TotalSize, ChunkSize, ChunkOffset, Chunk) ((void)0)
     #define TraceLogDebug(message) ((void)0)
     #define TraceLogInfo(message) ((void)0)
     #define TraceLogError(message) ((void)0)
     #define TraceTrackingState(ts) ((void)0)
     #define TraceCameraBlobs(blobs) ((void)0)
+    #define TracePoseLatchCPUWrite(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast, StartPosition, EndPosition, StartQuat, EndQuat) ((void)0)
+    #define TracePoseLatchGPULatchReadback(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast) ((void)0)
+    #define TraceVSync(VSyncTime, FrameIndex) ((void)0)
+    #define TracePosePrediction(OriginalPose, PredictedPose, PredictionTimeDeltaSeconds, id) ((void)0)
+    #define TraceAppCompositorFocus(Pid) ((void)0)
+    #define TraceAppConnect(Pid) ((void)0)
+    #define TraceAppDisconnect(Pid) ((void)0)
+    #define TraceAppNoOp(Pid) ((void)0)
+    #define TraceLatencyTiming(LatencyTiming) ((void)0)
+    #define TraceEndFrameAppTiming(AppTiming, DistortionGpuDuration) ((void)0)
 
 #endif // OVR_ENABLE_ETW_TRACING
 

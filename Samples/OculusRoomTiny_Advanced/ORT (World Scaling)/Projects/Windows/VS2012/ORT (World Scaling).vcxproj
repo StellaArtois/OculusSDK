@@ -25,7 +25,7 @@
     <ProjectGuid>{09E2164C-536E-4CEE-B21F-9214B0C15B19}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>d.  ORT (World Scaling)</ProjectName>
+    <ProjectName>d. World Scaling</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

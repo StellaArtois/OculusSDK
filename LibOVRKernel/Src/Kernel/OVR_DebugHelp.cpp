@@ -348,6 +348,97 @@ void GetThreadStackBounds(void*& pStackBase, void*& pStackLimit, ThreadHandle th
 }
 
 
+bool KillCdeclFunction(void* pFunction, int32_t functionReturnValue, SavedFunction* pSavedFunction)
+{
+    #if defined(OVR_OS_MS)
+        // The same implementation works for both 32 bit x86 and 64 bit x64.
+        DWORD dwOldProtect;
+        const uint8_t size = ((functionReturnValue == 0) ? 3 : 6);
+    
+        if(VirtualProtect(pFunction, size, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+        {
+            if(pSavedFunction) // If the user wants to save the implementation for later restoration...
+            {
+                pSavedFunction->Function = pFunction;
+                pSavedFunction->Size = size;
+                memcpy(pSavedFunction->Data, pFunction, pSavedFunction->Size);
+            }
+
+            if(functionReturnValue == 0)
+            {
+                const uint8_t instructionBytes[] = { 0x33, 0xc0, 0xc3 };              // xor eax, eax; ret
+                memcpy(pFunction, instructionBytes, sizeof(instructionBytes));
+            }
+            else
+            {
+                uint8_t instructionBytes[] = { 0xb8, 0x00, 0x00, 0x00, 0x00, 0xc3 };  // mov eax, 0x00000000; ret
+                memcpy(instructionBytes + 1, &functionReturnValue, sizeof(int32_t));  // mov eax, functionReturnValue; ret
+                memcpy(pFunction, instructionBytes, sizeof(instructionBytes));
+            }
+
+            VirtualProtect(pFunction, size, dwOldProtect, &dwOldProtect);
+            return true;
+        }
+    #else
+        OVR_UNUSED3(pFunction, functionReturnValue, pSavedFunction);
+    #endif
+
+    return false;
+}
+
+
+bool KillCdeclFunction(void* pFunction, SavedFunction* pSavedFunction)
+{
+    #if defined(OVR_OS_MS)
+        // The same implementation works for both 32 bit x86 and 64 bit x64.
+        DWORD dwOldProtect;
+        const uint8_t size = 1;
+
+        if(VirtualProtect(pFunction, size, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+        {
+            if(pSavedFunction) // If the user wants to save the implementation for later restoration...
+            {
+                pSavedFunction->Function = pFunction;
+                pSavedFunction->Size = size;
+                memcpy(pSavedFunction->Data, pFunction, pSavedFunction->Size);
+            }
+
+            const uint8_t instructionBytes[] = { 0xc3 };                        // asm ret
+            memcpy(pFunction, instructionBytes, sizeof(instructionBytes));
+            VirtualProtect(pFunction, size, dwOldProtect, &dwOldProtect);
+            return true;
+        }
+
+    #else
+        OVR_UNUSED2(pFunction, pSavedFunction);
+    #endif
+
+    return false;
+}
+
+
+bool RestoreCdeclFunction(SavedFunction* pSavedFunction)
+{
+    if(pSavedFunction->Size)
+    {
+        #if defined(OVR_OS_MS)
+            DWORD dwOldProtect;
+
+            if(VirtualProtect(pSavedFunction->Function, pSavedFunction->Size, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+            {
+                memcpy(pSavedFunction->Function, pSavedFunction->Data, pSavedFunction->Size);
+                VirtualProtect(pSavedFunction->Function, pSavedFunction->Size, dwOldProtect, &dwOldProtect);
+                return true;
+            }
+        #else
+            OVR_UNUSED2(pFunction, pSavedFunction);
+        #endif
+    }
+
+    return false;
+}
+
+
 bool OVRIsDebuggerPresent()
 {
     #if defined(OVR_OS_MS)
@@ -2123,7 +2214,7 @@ ExceptionHandler::ExceptionHandler()
   , reportFilePath()
   , miniDumpFlags(0)
   , miniDumpFilePath()
-  , file(nullptr)
+  , LogFile(nullptr)
   , scratchBuffer()
   , exceptionOccurred(false)
   , handlingBusy(0)
@@ -2197,19 +2288,25 @@ size_t ExceptionHandler::GetCrashDumpDirectory(char* directoryPath, size_t direc
 {
     
     #if defined(OVR_OS_MS)
-        wchar_t pathW[OVR_MAX_PATH + 1]; // +1 because we append a path separator.
-        HRESULT hr = SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, nullptr, SHGFP_TYPE_CURRENT, pathW);
+        wchar_t pathW[OVR_MAX_PATH];
+        HRESULT hr = SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA | CSIDL_FLAG_CREATE, nullptr, SHGFP_TYPE_CURRENT, pathW); // Expects pathW to be MAX_PATH. The returned path does not include a trailing backslash. 
 
         if (SUCCEEDED(hr))
         {
-            intptr_t requiredUTF8Length = OVR::UTF8Util::GetEncodeStringSize(pathW); // Returns required strlen.
-            if (requiredUTF8Length < OVR_MAX_PATH) // We need space for a trailing path separator.
+            intptr_t requiredUTF8Length = OVR::UTF8Util::GetEncodeStringSize(pathW); // Returns required strlen. Never returns a negative value.
+
+            if ((size_t)requiredUTF8Length < directoryPathCapacity) // We need space for a trailing path separator.
             {
                 OVR::UTF8Util::EncodeString(directoryPath, pathW, -1);
-                OVR::OVR_strlcat(directoryPath, "\\", directoryPathCapacity);
+
+                if((requiredUTF8Length == 0) || (directoryPath[requiredUTF8Length - 1] != '\\')) // If there is no trailing \ char...
+                {
+                    OVR::OVR_strlcat(directoryPath, "\\", directoryPathCapacity);
+                    requiredUTF8Length++;
+                }
             }
 
-            return (requiredUTF8Length + 1);
+            return requiredUTF8Length; // Returns the required strlen.
         }
 
     #elif defined(OVR_OS_MAC)
@@ -2924,12 +3021,24 @@ void ExceptionHandler::WriteExceptionDescription()
     #endif
 }
 
+void ExceptionHandler::writeLogLine(const char* buffer, int length)
+{
+    OVR_ASSERT((int)strlen(buffer) == length); // Input must be null-terminated.
+
+    if (LogFile != nullptr)
+        fwrite(buffer, length, 1, LogFile);
+
+    fwrite(buffer, length, 1, stdout);
+
+#if defined(OVR_OS_WIN32)
+    ::OutputDebugStringA(buffer);
+#endif
+}
 
 void ExceptionHandler::WriteReportLine(const char* pLine)
 {
-    fwrite(pLine, strlen(pLine), 1, file);
+    writeLogLine(pLine, (int)strlen(pLine));
 }
-
 
 void ExceptionHandler::WriteReportLineF(const char* format, ...)
 {
@@ -2940,7 +3049,7 @@ void ExceptionHandler::WriteReportLineF(const char* format, ...)
         length = (OVR_ARRAY_COUNT(scratchBuffer) - 1);    // ... use what we have.
     va_end(args);
 
-    fwrite(scratchBuffer, length, 1, file);
+    writeLogLine(scratchBuffer, length);
 }
 
 
@@ -3051,7 +3160,6 @@ void ExceptionHandler::WriteThreadCallstack(ThreadHandle threadHandle, ThreadSys
     }
 }
 
-
 void ExceptionHandler::WriteReport()
 {
     // It's important that we don't allocate any memory here if we can help it.
@@ -3068,9 +3176,26 @@ void ExceptionHandler::WriteReport()
         OVR_strlcpy(reportFilePathActual, reportFilePath, OVR_ARRAY_COUNT(reportFilePathActual));
     }
 
-    file = fopen(reportFilePathActual, "w");
-    OVR_ASSERT(file != nullptr);
-    if(!file)
+    // Since LogFile is still null at this point,
+    OVR_ASSERT(LogFile == nullptr);
+    // ...we are writing this to the console/syslog but not the log file.
+    WriteReportLineF("[ExceptionHandler] Exception caught!  Writing report to file: %s\n", reportFilePathActual);
+
+#if defined(OVR_OS_WIN32)
+    HANDLE hEventSource = ::RegisterEventSourceW(nullptr, OVR_SYSLOG_NAME);
+
+    if (hEventSource)
+    {
+        // This depends on the scratch buffer containing the file location.
+        const char* lines = scratchBuffer;
+        ::ReportEventA(hEventSource, EVENTLOG_ERROR_TYPE, 0, 0, nullptr, 1, 0, &lines, nullptr);
+        ::DeregisterEventSource(hEventSource);
+    }
+#endif
+
+    LogFile = fopen(reportFilePathActual, "w");
+    OVR_ASSERT(LogFile != nullptr);
+    if(!LogFile)
         return;
 
     SymbolLookup::Initialize();
@@ -3197,7 +3322,7 @@ void ExceptionHandler::WriteReport()
         SprintfAddress(threadIdStr, OVR_ARRAY_COUNT(threadIdStr), pHMDState->BeginFrameThreadId);
 
         WriteReportLineF("Hmd Caps: %x, Hmd Service Caps: %x, Latency test active: %s, Last frame time: %f, Last get frame time: %f, Rendering configred: %s, Begin frame called: %s, Begin frame thread id: %s\n",
-                    pHMDState->EnabledHmdCaps, pHMDState->EnabledServiceHmdCaps, pHMDState->LatencyTestActive ? "yes" : "no", pHMDState->LastFrameTimeSeconds, pHMDState->LastGetFrameTimeSeconds, pHMDState->RenderingConfigured ? "yes" : "no",
+                    pHMDState->EnabledHmdCaps, pHMDState->EnabledServiceHmdCaps, pHMDState->LatencyTestDk1Active ? "yes" : "no", pHMDState->LastFrameTimeSeconds, pHMDState->LastGetFrameTimeSeconds, pHMDState->RenderingConfigured ? "yes" : "no",
                     pHMDState->BeginFrameCalled ? "yes" : "no", threadIdStr);
 
         if(pHMDState->pLastError)
@@ -3857,8 +3982,8 @@ void ExceptionHandler::WriteReport()
 
     SymbolLookup::Shutdown();
 
-    fclose(file);
-    file = nullptr;
+    fclose(LogFile);
+    LogFile = nullptr;
 }
 
 

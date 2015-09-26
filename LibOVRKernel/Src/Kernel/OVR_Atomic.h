@@ -951,12 +951,26 @@ public:
     // Locker class, used for automatic locking
     class Locker
     {
-    public:     
         Lock *pLock;
-        inline Locker(Lock *plock)
-        { pLock = plock; pLock->DoLock(); }
-        inline ~Locker()
-        { pLock->Unlock();  }
+
+    public:
+        Locker(Lock *plock)
+        {
+            pLock = plock;
+            if (plock)
+                pLock->DoLock();
+        }
+        ~Locker()
+        {
+            Release();
+        }
+
+        void Release()
+        {
+            if (pLock)
+                pLock->Unlock();
+            pLock = nullptr;
+        }
     };
 };
 

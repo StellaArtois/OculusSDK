@@ -25,7 +25,7 @@
     <ProjectGuid>{AC3105E0-8044-4A09-8F67-05D95F4E4E86}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>i.  ORT (Matching Alternate Eye)</ProjectName>
+    <ProjectName>i. Matching Alternate Eye</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

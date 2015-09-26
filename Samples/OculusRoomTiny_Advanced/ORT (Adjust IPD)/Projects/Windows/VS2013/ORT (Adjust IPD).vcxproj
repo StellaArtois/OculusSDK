@@ -25,7 +25,7 @@
     <ProjectGuid>{FFEDA287-2581-4304-8896-8817B77FF51E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>OculusRoomTiny</RootNamespace>
-    <ProjectName>g.  ORT (Adjust IPD)</ProjectName>
+    <ProjectName>g. Adjust IPD</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

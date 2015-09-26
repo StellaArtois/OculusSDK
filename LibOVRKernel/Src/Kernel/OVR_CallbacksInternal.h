@@ -54,7 +54,7 @@ template<class DelegateT> class CallbackListener;
 class CallbackEmitterBase
 {
 protected:
-    static Lock EmitterLock;
+    static Lock* GetEmitterLock();
 };
 
 template<class DelegateT>
@@ -141,7 +141,7 @@ protected:
     {
         if (DirtyListenersCache != 0)
         {
-            Lock::Locker locker(&EmitterLock);
+            Lock::Locker locker(GetEmitterLock());
 
             // TBD: Should memory allocation be further reduced here?
             ListenersCacheForCalls = Listeners;
@@ -211,7 +211,7 @@ public:
 template<class DelegateT>
 bool FloatingCallbackEmitter<DelegateT>::AddListener(FloatingCallbackListener<DelegateT>* listener)
 {
-    Lock::Locker locker(&EmitterLock);
+    Lock::Locker locker(GetEmitterLock());
 
     if (IsShutdown)
     {
@@ -237,7 +237,7 @@ bool FloatingCallbackEmitter<DelegateT>::AddListener(FloatingCallbackListener<De
 template<class DelegateT>
 void FloatingCallbackEmitter<DelegateT>::OnListenerCancel(FloatingCallbackListener<DelegateT>* listener)
 {
-    Lock::Locker emitterLocker(&EmitterLock);
+    Lock::Locker locker(GetEmitterLock());
 
     // If not shut down,
     // Note that if it is shut down then there will be no listeners in the array.
@@ -251,7 +251,7 @@ void FloatingCallbackEmitter<DelegateT>::OnListenerCancel(FloatingCallbackListen
 template<class DelegateT>
 void FloatingCallbackEmitter<DelegateT>::Shutdown()
 {
-    Lock::Locker locker(&EmitterLock);
+    Lock::Locker locker(GetEmitterLock());
 
     IsShutdown = true;
 

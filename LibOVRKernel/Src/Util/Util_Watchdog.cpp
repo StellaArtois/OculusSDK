@@ -141,7 +141,7 @@ int WatchDogObserver::Run()
                         String threadListOutput, moduleListOutput;
                         symbolLookup.ReportThreadCallstacks(threadListOutput);
                         symbolLookup.ReportModuleInformation(moduleListOutput);
-                        LogText("---DEADLOCK STATE---\n\n%s\n\n%s\n---END OF DEADLOCK STATE---\n", threadListOutput.ToCStr(), moduleListOutput.ToCStr());
+                        LogError("---DEADLOCK STATE---\n\n%s\n\n%s\n---END OF DEADLOCK STATE---", threadListOutput.ToCStr(), moduleListOutput.ToCStr());
                     }
 
                     if (IsReporting)
