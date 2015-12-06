@@ -25,42 +25,49 @@ limitations under the License.
 /// Try picking points in the room, and moving to them, to see how intuitive it feels.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+
+struct AutoLinearVelocity : BasicVR
+{
+    AutoLinearVelocity(HINSTANCE hinst) : BasicVR(hinst, L"Auto Linear Velocity") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+            // We turn off yaw to keep the case simple
+		    ActionFromInput(1, false);
+		    Layer[0]->GetEyePoses();
+
+            // Find perturbation of position from point 1m in front of camera
+            XMVECTOR eye0 = ConvertToXM(Layer[0]->EyeRenderPose[0].Position);
+            XMVECTOR eye1 = ConvertToXM(Layer[0]->EyeRenderPose[1].Position);
+            XMVECTOR perturb = XMVectorScale(XMVectorAdd(eye0, eye1), 0.5f);
+
+            // Calculate velocity from this
+            const float sensitivity = 0.2f;
+		    XMVECTOR vel = XMVectorScale(XMVectorSet(-XMVectorGetX(perturb), 0, -XMVectorGetZ(perturb), 0), sensitivity);
+
+              // Add velocity to camera
+            MainCam->Pos = XMVectorAdd(MainCam->Pos, vel);
+
+            for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        // We turn off yaw to keep the case simple
-        basicVR.ActionFromInput(1,false); 
-        basicVR.Layer[0]->GetEyePoses();
-
-        // Find perturbation of position from point 1m in front of camera
-        XMVECTOR eye0 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Position);
-        XMVECTOR eye1 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[1].Position);
-        XMVECTOR perturb = XMVectorScale(XMVectorAdd(eye0,eye1),0.5f);
-
-        // Calculate velocity from this
-        const float sensitivity = 0.2f;
-		XMVECTOR vel = XMVectorScale(XMVectorSet(-XMVectorGetX(perturb), 0, -XMVectorGetZ(perturb), 0), sensitivity);
-
-          // Add velocity to camera
-        basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos,vel);
- 
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	AutoLinearVelocity app(hinst);
+    return app.Run();
 }

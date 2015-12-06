@@ -36,7 +36,7 @@ limitations under the License.
 
 // Includes used for GetBaseOVRPath()
 #ifdef OVR_OS_WIN32
-    #include <Kernel/OVR_Win32_IncludeWindows.h>
+    #include "Kernel/OVR_Win32_IncludeWindows.h"
     #include <Shlobj.h>
     #include <Shlwapi.h>
 
@@ -441,7 +441,7 @@ String GetBaseOVRPath(bool create_dir)
         }
     }
 
-#elif defined(OVR_OS_OS) // Other Microsoft OSs
+#elif defined(OVR_OS_MS) // Other Microsoft OSs
 
     // TODO: figure this out.
     OVR_UNUSED ( create_dir );
@@ -469,7 +469,7 @@ String GetBaseOVRPath(bool create_dir)
 #else
 
     const char* home = getenv("HOME");
-    path = home;
+    String path = home;
     path += "/.config/Oculus";
 
     if (create_dir)
@@ -492,14 +492,15 @@ String GetBaseOVRPath(bool create_dir)
 
 #ifdef OVR_OS_MS
 //widechar functions are Windows only for now
-bool GetRegistryStringW(const wchar_t* pSubKey, const wchar_t* stringName, wchar_t out[MAX_PATH], bool wow64value)
+bool GetRegistryStringW(const wchar_t* pSubKey, const wchar_t* stringName, wchar_t out[MAX_PATH], bool wow64value, bool currentUser)
 {
+    HKEY root = currentUser ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
     DWORD dwType = REG_SZ;
     HKEY hKey = 0;
     wchar_t value[MAX_PATH + 1]; // +1 because RegQueryValueEx doesn't necessarily 0-terminate.
     DWORD value_length = MAX_PATH;
 
-    if ((RegOpenKeyExW(HKEY_LOCAL_MACHINE, pSubKey, 0, KEY_QUERY_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS) || 
+    if ((RegOpenKeyExW(root, pSubKey, 0, KEY_QUERY_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS) ||
         (RegQueryValueExW(hKey, stringName, NULL, &dwType, (LPBYTE)&value, &value_length) != ERROR_SUCCESS) || (dwType != REG_SZ))
     {
         out[0] = L'\0';
@@ -514,13 +515,14 @@ bool GetRegistryStringW(const wchar_t* pSubKey, const wchar_t* stringName, wchar
 }
 
 
-bool GetRegistryDwordW(const wchar_t* pSubKey, const wchar_t* stringName, DWORD& out, bool wow64value)
+bool GetRegistryDwordW(const wchar_t* pSubKey, const wchar_t* stringName, DWORD& out, bool wow64value, bool currentUser)
 {
+    HKEY root = currentUser ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
     DWORD dwType = REG_DWORD;
     HKEY hKey = 0;
     DWORD value_length = sizeof(DWORD);
 
-    if ((RegOpenKeyExW(HKEY_LOCAL_MACHINE, pSubKey, 0, KEY_QUERY_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS) || 
+    if ((RegOpenKeyExW(root, pSubKey, 0, KEY_QUERY_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS) ||
         (RegQueryValueExW(hKey, stringName, NULL, &dwType, (LPBYTE)&out, &value_length) != ERROR_SUCCESS) || (dwType != REG_DWORD))
     {
         out = 0;
@@ -532,25 +534,76 @@ bool GetRegistryDwordW(const wchar_t* pSubKey, const wchar_t* stringName, DWORD&
     return true;
 }
 
+bool GetRegistryBinaryW(const wchar_t* pSubKey, const wchar_t* stringName, LPBYTE out, DWORD* size, bool wow64value, bool currentUser)
+{
+    HKEY root = currentUser ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
+    DWORD dwType = REG_BINARY;
+    HKEY hKey = 0;
+
+    if ((RegOpenKeyExW(root, pSubKey, 0, KEY_QUERY_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS) ||
+        (RegQueryValueExW(hKey, stringName, NULL, &dwType, out, size) != ERROR_SUCCESS) || (dwType != REG_BINARY))
+    {
+        *out = 0;
+        RegCloseKey(hKey);
+        return false;
+    }
+    RegCloseKey(hKey);
+
+    return true;
+}
+
 
 // When reading Oculus registry keys, we recognize that the user may have inconsistently 
 // used a DWORD 1 vs. a string "1", and so we support either when checking booleans.
-bool GetRegistryBoolW(const wchar_t* pSubKey, const wchar_t* stringName, bool defaultValue, bool wow64value)
+bool GetRegistryBoolW(const wchar_t* pSubKey, const wchar_t* stringName, bool defaultValue, bool wow64value, bool currentUser)
 {
     wchar_t out[MAX_PATH];
-    if (GetRegistryStringW(pSubKey, stringName, out, wow64value))
+    if (GetRegistryStringW(pSubKey, stringName, out, wow64value, currentUser))
     {
         return (_wtoi64(out) != 0);
     }
 
     DWORD dw;
-    if (GetRegistryDwordW(pSubKey, stringName, dw, wow64value))
+    if (GetRegistryDwordW(pSubKey, stringName, dw, wow64value, currentUser))
     {
         return (dw != 0);
     }
 
     return defaultValue;
 }
+
+bool SetRegistryBinaryW(const wchar_t* pSubKey, const wchar_t* stringName, LPBYTE value, DWORD size, bool wow64value, bool currentUser)
+{
+    HKEY root = currentUser ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
+    HKEY hKey = 0;
+
+    if ((RegCreateKeyExW(root, pSubKey, 0, nullptr, 0, KEY_CREATE_SUB_KEY | KEY_SET_VALUE | (wow64value ? KEY_WOW64_32KEY : 0), nullptr, &hKey, nullptr) != ERROR_SUCCESS) ||
+        (RegSetValueExW(hKey, stringName, 0, REG_BINARY, value, size) != ERROR_SUCCESS))
+    {
+        RegCloseKey(hKey);
+        return false;
+    }
+    RegCloseKey(hKey);
+    return true;
+}
+
+bool DeleteRegistryValue(const wchar_t* pSubKey, const wchar_t* stringName, bool wow64value, bool currentUser)
+{
+    HKEY root = currentUser ? HKEY_CURRENT_USER : HKEY_LOCAL_MACHINE;
+    HKEY hKey = 0;
+
+    if (RegOpenKeyExW(root, pSubKey, 0, KEY_ALL_ACCESS | (wow64value ? KEY_WOW64_32KEY : 0), &hKey) != ERROR_SUCCESS)
+    {
+        RegCloseKey(hKey);
+        return false;
+    }
+    bool result = (RegDeleteValueW(hKey, stringName) == ERROR_SUCCESS);
+
+    RegCloseKey(hKey);
+    return result;
+}
+
+
 
 bool GetOVRRuntimePathW(wchar_t out[MAX_PATH])
 {
@@ -599,17 +652,14 @@ bool GetDefaultFirmwarePath(String& firmwarePath)
 
 bool GetFirmwarePathFromService(OVR::String& firmwarePath, int numSearchDirs)
 {
+#ifdef OVR_OS_MS
     firmwarePath = "";
 
     //Try relative file locations
-#ifdef OVR_OS_MS
     wchar_t path[MAX_PATH]; // FIXME: This is Windows-specific.
     // Get full path to our module.
     int pathlen = ::GetModuleFileNameW(nullptr, path, MAX_PATH);
     OVR_ASSERT_AND_UNUSED(pathlen, pathlen);
-#else
-    #error "FIXME"
-#endif // OVR_OS_MS
 
     //try the registry default
     if (GetOVRRuntimePath(firmwarePath) && !firmwarePath.IsEmpty())
@@ -628,16 +678,17 @@ bool GetFirmwarePathFromService(OVR::String& firmwarePath, int numSearchDirs)
 
     if (firmwarePath.IsEmpty())
     {
-#ifdef OVR_OS_MS
         //try internal path.
         wchar_t relpath[MAX_PATH];
-        relpath[0] = '\0';
+        relpath[0] = L'\0';
         for (int i = 0; i < numSearchDirs; i++)
         {
-            //Iterate up one directory
-            OVR_wcscat(relpath, MAX_PATH, L"..\\");
-            if (::_wfullpath(path, relpath, MAX_PATH) == nullptr) //invalid path
-                break; 
+            wchar_t* trailingSlash = wcsrchr(path, L'\\');
+            if (trailingSlash == nullptr)
+            {
+                break; // no more paths to traverse
+            }
+            *(trailingSlash + 1) = L'\0'; //delete after the last trailing slash
             //Then attach this prefix
             OVR_wcscat(path, MAX_PATH, L"Firmware\\");
             //And attempt to find the path
@@ -646,13 +697,20 @@ bool GetFirmwarePathFromService(OVR::String& firmwarePath, int numSearchDirs)
                 firmwarePath = String(path);
                 return true;
             }
+            else
+            {
+                *trailingSlash = L'\0'; //remove trailing slash, traversing up 1 directory
+            }
         }
-#else
-    #error "FIXME"
-#endif
     }
 
-    firmwarePath = "";
+    firmwarePath = L"";
+
+#else
+    OVR_UNUSED2(firmwarePath, numSearchDirs);
+    //#error "FIXME"
+#endif
+
     return false;
 }
 

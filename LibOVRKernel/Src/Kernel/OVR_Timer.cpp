@@ -79,8 +79,8 @@ double Timer::VirtualSeconds    = 0.0;
 // Returns global high-resolution application timer in seconds.
 double Timer::GetSeconds()
 {
-	if(useFakeSeconds)
-		return FakeSeconds;
+	if(useVirtualSeconds)
+		return VirtualSeconds;
 
     // Choreographer vsync timestamp is based on.
     struct timespec tp;
@@ -102,8 +102,8 @@ double Timer::GetSeconds()
 
 uint64_t Timer::GetTicksNanos()
 {
-    if (useFakeSeconds)
-        return (uint64_t) (FakeSeconds * NanosPerSecond);
+    if (useVirtualSeconds)
+        return (uint64_t) (VirtualSeconds * NanosPerSecond);
 
     // Choreographer vsync timestamp is based on.
     struct timespec tp;
@@ -436,9 +436,21 @@ void Timer::shutdownTimerSystem()
 
 double Timer::GetSeconds()
 {
-    if(useFakeSeconds)
-        return FakeSeconds;
-    
+    if(useVirtualSeconds)
+        return VirtualSeconds;
+
+    using FpSeconds = std::chrono::duration<double, std::chrono::seconds::period>;
+
+    auto now = std::chrono::high_resolution_clock::now();
+    return FpSeconds(now.time_since_epoch()).count();
+}
+
+
+double Timer::GetVirtualSeconds()
+{
+    if(useVirtualSeconds)
+        return VirtualSeconds;
+
     using FpSeconds = std::chrono::duration<double, std::chrono::seconds::period>;
 
     auto now = std::chrono::high_resolution_clock::now();
@@ -448,8 +460,8 @@ double Timer::GetSeconds()
 
 uint64_t Timer::GetTicksNanos()
 {
-    if (useFakeSeconds)
-        return (uint64_t) (FakeSeconds * NanosPerSecond);
+    if (useVirtualSeconds)
+        return (uint64_t) (VirtualSeconds * NanosPerSecond);
     
     using Uint64Nanoseconds = std::chrono::duration<uint64_t, std::chrono::nanoseconds::period>;
 

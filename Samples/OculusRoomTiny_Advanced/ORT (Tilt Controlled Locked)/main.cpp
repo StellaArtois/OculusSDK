@@ -31,61 +31,67 @@ limitations under the License.
 /// FURTHER RESEARCH IS TO DOUBLE THE EFFECT, BUT THEN CAP IT, AND ONCE CAPPED, THEN CONTINUE WITH 100% TILT and ROLL
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
-#include "..\Common\Win32_ControlMethods.h"  // Control code
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_ControlMethods.h"  // Control code
+
+struct TiltControlledLockedRift : BasicVR
+{
+    TiltControlledLockedRift(HINSTANCE hinst) : BasicVR(hinst, L"Tilt Controlled Locked Rift") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+            ovrTrackingState trackingState = Layer[0]->GetEyePoses();
+
+            // Add velocity to camera
+		    MainCam->Pos = XMVectorAdd(MainCam->Pos, FindVelocityFromTilt(this, Layer[0], &trackingState));
+
+            // And lets freeze the reorientation, to not overcomplicate the 
+            // effects contained in the sample.
+            MainCam->Rot = XMQuaternionIdentity();
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+                XMVECTOR storedOrientation;
+                if (!DIRECTX.Key['1'])
+                {
+                    storedOrientation = ConvertToXM(Layer[0]->EyeRenderPose[eye].Orientation);
+                    float proportionOfNormal = 0.5f; // 50:50 of normal tilt/roll/yaw, and only yaw;
+	                XMFLOAT3 rot = GetEulerAngles(storedOrientation);
+                    XMVECTOR baseOne = XMQuaternionRotationRollPitchYaw(0, rot.y, 0);
+	                XMVECTOR lerpedQuat = XMQuaternionSlerp(baseOne, storedOrientation, proportionOfNormal);
+	                Layer[0]->EyeRenderPose[eye].Orientation.x = XMVectorGetX(lerpedQuat);
+	                Layer[0]->EyeRenderPose[eye].Orientation.y = XMVectorGetY(lerpedQuat);
+	                Layer[0]->EyeRenderPose[eye].Orientation.z = XMVectorGetZ(lerpedQuat);
+	                Layer[0]->EyeRenderPose[eye].Orientation.w = XMVectorGetW(lerpedQuat);
+                }
+
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+
+                if (!DIRECTX.Key['1'])
+                {
+                    // Now put it back
+	                Layer[0]->EyeRenderPose[eye].Orientation.x = XMVectorGetX(storedOrientation);
+	                Layer[0]->EyeRenderPose[eye].Orientation.y = XMVectorGetY(storedOrientation);
+	                Layer[0]->EyeRenderPose[eye].Orientation.z = XMVectorGetZ(storedOrientation);
+	                Layer[0]->EyeRenderPose[eye].Orientation.w = XMVectorGetW(storedOrientation);
+                }
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        ovrTrackingState trackingState = basicVR.Layer[0]->GetEyePoses();
-
-        // Add velocity to camera
-		basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, FindVelocityFromTilt(&basicVR, basicVR.Layer[0], &trackingState));
-
-        // And lets freeze the reorientation, to not overcomplicate the 
-        // effects contained in the sample.
-        basicVR.MainCam.Rot = XMQuaternionIdentity();
-
-        for (int i = 0; i < 2; i++)
-        {
-            XMVECTOR storedOrientation;
-            if (!DIRECTX.Key['1'])
-            {
-                storedOrientation = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[i].Orientation);
-                float proportionOfNormal = 0.5f;// 50:50 of normal tilt/roll/yaw, and only yaw;
-				XMFLOAT3 rot = GetEulerAngles(storedOrientation);
-                XMVECTOR baseOne = XMQuaternionRotationRollPitchYaw(0,rot.y,0);
-				XMVECTOR lerpedQuat = XMQuaternionSlerp(baseOne, storedOrientation, proportionOfNormal);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.x = XMVectorGetX(lerpedQuat);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.y = XMVectorGetY(lerpedQuat);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.z = XMVectorGetZ(lerpedQuat);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.w = XMVectorGetW(lerpedQuat);
-			}
-
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, i);
-
-            if (!DIRECTX.Key['1'])
-            {
-                // Now put it back
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.x = XMVectorGetX(storedOrientation);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.y = XMVectorGetY(storedOrientation);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.z = XMVectorGetZ(storedOrientation);
-				basicVR.Layer[0]->EyeRenderPose[i].Orientation.w = XMVectorGetW(storedOrientation);
-            }
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	TiltControlledLockedRift app(hinst);
+    return app.Run();
 }

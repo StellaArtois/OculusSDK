@@ -995,6 +995,55 @@ private:
 };
 
 
-} // OVR
+//-------------------------------------------------------------------------------------
+// Thin locking wrapper around data
+
+template<class T> class LockedData
+{
+public:
+    LockedData(Lock& lock) :
+        TheLock(lock)
+    {
+    }
+    LockedData& operator=(const LockedData& rhs)
+    {
+        OVR_ASSERT(false);
+        return *this;
+    }
+
+    T Get()
+    {
+        Lock::Locker locker(&TheLock);
+        return Instance;
+    }
+
+    void Set(const T& value)
+    {
+        Lock::Locker locker(&TheLock);
+        Instance = value;
+    }
+
+    // Returns true if the value has changed.
+    // Returns false if the value has not changed.
+    bool GetIfChanged(T& value)
+    {
+        Lock::Locker locker(&TheLock);
+
+        if (value != Instance)
+        {
+            value = Instance;
+            return true;
+        }
+
+        return false;
+    }
+
+protected:
+    T Instance;
+    Lock& TheLock;
+};
+
+
+} // namespace OVR
 
 #endif

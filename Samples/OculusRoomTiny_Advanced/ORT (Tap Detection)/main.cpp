@@ -21,42 +21,50 @@ limitations under the License.
 /// on the Rift. 
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
-#include "..\Common\Win32_ControlMethods.h" // Control code
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_ControlMethods.h" // Control code
+
+struct TapDetection : BasicVR
+{
+    TapDetection(HINSTANCE hinst) : BasicVR(hinst, L"Tap Detection") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    ovrTrackingState trackingState = Layer[0]->GetEyePoses();
+
+            // Change color mode if single tapped
+            bool singleTap = WasItTapped(trackingState.HeadPose.LinearAcceleration);
+            static int color_mode = 0;
+            if (singleTap)
+                ++color_mode;
+
+            for (int eye = 0; eye < 2; ++eye)
+		    {
+                // Render world according to color mode
+                switch (color_mode % 4)
+                {
+                case 0: Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye); break;
+                case 1: Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 1, 0, 0); break;
+                case 2: Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 0, 1, 0); break;
+                case 3: Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 0, 0, 1); break;
+                }
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        ovrTrackingState trackingState = basicVR.Layer[0]->GetEyePoses();
-
-        // Change colour mode if single tapped
-        bool singleTap = WasItTapped(trackingState.HeadPose.LinearAcceleration);
-        static int color_mode = 0;
-        if (singleTap) color_mode++;
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            // Render world according to colour mode
-            switch(color_mode % 4)
-            {
-                case(0) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye); break;
-                case(1) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,1,0,0); break;
-                case(2) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,0,1,0); break;
-                case(3) : basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene,eye,0,0,1,1,0,0,1); break;
-            }
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	TapDetection app(hinst);
+    return app.Run();
 }

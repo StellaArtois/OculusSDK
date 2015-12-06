@@ -96,7 +96,7 @@ limitations under the License.
 // GLAPIENTRY is the calling convention (__stdcall under Microsoft).
 //
 #if defined(GLE_WGL_ENABLED)
-    #include <Kernel/OVR_Win32_IncludeWindows.h>
+    #include "Kernel/OVR_Win32_IncludeWindows.h"
 
     #ifndef WINGDIAPI // Normally defined via windows.h
         #define WINGDIAPI __declspec(dllimport)
@@ -4495,6 +4495,7 @@ extern "C" {
     #define __GLX_glx_h__
     #define __glx_h__
 
+    // FIXME: Including These Raw Causes Major Conflicts!
     #include <X11/Xlib.h>
     #include <X11/Xutil.h>
     #include <X11/Xmd.h>

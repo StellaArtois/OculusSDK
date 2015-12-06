@@ -24,10 +24,11 @@ limitations under the License.
 /// It runs with DirectX11.
 
 // Include DirectX
-#include "..\..\OculusRoomTiny_Advanced\Common\Win32_DirectXAppUtil.h" 
+#include "../../OculusRoomTiny_Advanced/Common/Win32_DirectXAppUtil.h"
 
 // Include the Oculus SDK
 #include "OVR_CAPI_D3D.h"
+
 
 //------------------------------------------------------------
 // ovrSwapTextureSet wrapper class that also maintains the render target views
@@ -123,14 +124,6 @@ static bool MainLoop(bool retryCreate)
     if (!DIRECTX.InitDevice(hmdDesc.Resolution.w / 2, hmdDesc.Resolution.h / 2, reinterpret_cast<LUID*>(&luid)))
         goto Done;
 
-	// Start the sensor which informs of the Rift's pose and motion
-    result = ovr_ConfigureTracking(HMD, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0);
-    if (!OVR_SUCCESS(result))
-    {
-        if (retryCreate) goto Done;
-	    VALIDATE(OVR_SUCCESS(result), "Failed to configure tracking.");
-    }
-
 	// Make the eye render buffers (caution if actual size < requested due to HW limits). 
 	ovrRecti         eyeRenderViewport[2];
 
@@ -173,10 +166,7 @@ static bool MainLoop(bool retryCreate)
     roomScene = new Scene(false);
 
 	// Create camera
-    __pragma(warning(push))
-    __pragma(warning(disable:4316)) // Win32: object allocated on the heap may not be aligned 16
     mainCam = new Camera(&XMVectorSet(0.0f, 1.6f, 5.0f, 0), &XMQuaternionIdentity());
-    __pragma(warning(pop))
 
 	// Setup VR components, filling out description
 	ovrEyeRenderDesc eyeRenderDesc[2];
@@ -206,8 +196,10 @@ static bool MainLoop(bool retryCreate)
 		ovrPosef         EyeRenderPose[2];
 		ovrVector3f      HmdToEyeViewOffset[2] = { eyeRenderDesc[0].HmdToEyeViewOffset,
 			                                       eyeRenderDesc[1].HmdToEyeViewOffset };
-		ovrFrameTiming   ftiming = ovr_GetFrameTiming(HMD, 0);
-		ovrTrackingState hmdState = ovr_GetTrackingState(HMD, ftiming.DisplayMidpointSeconds);
+        double frameTime = ovr_GetPredictedDisplayTime(HMD, 0);
+        // Keeping sensorSampleTime as close to ovr_GetTrackingState as possible - fed into the layer
+        double           sensorSampleTime = ovr_GetTimeInSeconds();
+		ovrTrackingState hmdState = ovr_GetTrackingState(HMD, frameTime, ovrTrue);
 		ovr_CalcEyePoses(hmdState.HeadPose.ThePose, HmdToEyeViewOffset, EyeRenderPose);
 
 		// Render Scene to Eye Buffers
@@ -244,7 +236,7 @@ static bool MainLoop(bool retryCreate)
         }
 
 		// Initialize our single full screen Fov layer.
-		ovrLayerEyeFov ld;
+        ovrLayerEyeFov ld = {};
 		ld.Header.Type = ovrLayerType_EyeFov;
 		ld.Header.Flags = 0;
 
@@ -254,6 +246,7 @@ static bool MainLoop(bool retryCreate)
 			ld.Viewport[eye] = eyeRenderViewport[eye];
 			ld.Fov[eye] = hmdDesc.DefaultEyeFov[eye];
 			ld.RenderPose[eye] = EyeRenderPose[eye];
+            ld.SensorSampleTime = sensorSampleTime;
 		}
 
         ovrLayerHeader* layers = &ld.Header;

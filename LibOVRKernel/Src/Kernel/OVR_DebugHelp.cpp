@@ -431,7 +431,7 @@ bool RestoreCdeclFunction(SavedFunction* pSavedFunction)
                 return true;
             }
         #else
-            OVR_UNUSED2(pFunction, pSavedFunction);
+            OVR_UNUSED(pSavedFunction);
         #endif
     }
 
@@ -879,14 +879,32 @@ static void GetOSVersionName(char* versionName, size_t versionNameCapacity)
 
         if(GetVersionExW((LPOSVERSIONINFOW)&vi))
         {
-            if(vi.dwMajorVersion >= 7)
+            if (vi.dwMajorVersion == 10)
+            {
+                if (vi.dwMinorVersion == 0)
+                {
+                    if (vi.wProductType == VER_NT_WORKSTATION)
+                       name = "Windows 10";
+                    else
+                        name = "Windows Server 2016 Technical Preview";
+                }
+                else
+                {
+                    // Unknown recent version.
+                    if (vi.wProductType == VER_NT_WORKSTATION)
+                        name = "Windows 10 Unknown";
+                    else
+                        name = "Windows Server 2016 Unknown";
+                }
+            }
+            else if(vi.dwMajorVersion >= 7)
             {
                 // Unknown recent version.
             }
-            if(vi.dwMajorVersion >= 6)
+            else if(vi.dwMajorVersion >= 6)
             {
                 if(vi.dwMinorVersion >= 4)
-                    name = "Windows 10";
+                    name = "Windows 10 Pre Released";
                 else if(vi.dwMinorVersion >= 3)
                 {
                     if(vi.wProductType == VER_NT_WORKSTATION)
@@ -2345,14 +2363,14 @@ static ExceptionHandler* sExceptionHandler = nullptr;
         return 1;
     }
 
-    LONG WINAPI Win32ExceptionFilter(LPEXCEPTION_POINTERS pExceptionPointers)
+    LONG WINAPI Win32ExceptionFilter(LPEXCEPTION_POINTERS pExceptionPointersArg)
     {
         if(sExceptionHandler)
-            return (LONG)sExceptionHandler->ExceptionFilter(pExceptionPointers);
+            return (LONG)sExceptionHandler->ExceptionFilter(pExceptionPointersArg);
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    LONG ExceptionHandler::ExceptionFilter(LPEXCEPTION_POINTERS pExceptionPointers)
+    LONG ExceptionHandler::ExceptionFilter(LPEXCEPTION_POINTERS pExceptionPointersArg)
     {
         if(pauseCount)
             return EXCEPTION_CONTINUE_SEARCH;
@@ -2361,13 +2379,13 @@ static ExceptionHandler* sExceptionHandler = nullptr;
         // DBG_TERMINATE_PROCESS, DBG_CONTROL_BREAK, DBG_COMMAND_EXCEPTION, DBG_CONTROL_C, DBG_PRINTEXCEPTION_C, DBG_RIPEXCEPTION,
         // and 0x406d1388 (thread named, http://blogs.msdn.com/b/stevejs/archive/2005/12/19/505815.aspx).
 
-        if(pExceptionPointers->ExceptionRecord->ExceptionCode < 0x80000000)
+        if(pExceptionPointersArg->ExceptionRecord->ExceptionCode < 0x80000000)
             return EXCEPTION_CONTINUE_SEARCH;
 
         // VC++ C++ exceptions use code 0xe06d7363 ('Emsc')
         // http://support.microsoft.com/kb/185294
         // http://blogs.msdn.com/b/oldnewthing/archive/2010/07/30/10044061.aspx
-        if(pExceptionPointers->ExceptionRecord->ExceptionCode == 0xe06d7363)
+        if(pExceptionPointersArg->ExceptionRecord->ExceptionCode == 0xe06d7363)
             return EXCEPTION_CONTINUE_SEARCH;
 
         if(handlingBusy.CompareAndSet_Acquire(0, 1)) // If we can successfully change it from 0 to 1.
@@ -2376,7 +2394,7 @@ static ExceptionHandler* sExceptionHandler = nullptr;
 
             SymbolLookup::Initialize();
 
-            this->pExceptionPointers = pExceptionPointers;
+            this->pExceptionPointers = pExceptionPointersArg;
 
             // Disable the handler while we do this processing.
             ULONG result = RemoveVectoredExceptionHandler(vectoredHandle);
@@ -2398,17 +2416,17 @@ static ExceptionHandler* sExceptionHandler = nullptr;
             exceptionInfo.backtraceCount = symbolLookup.GetBacktrace(exceptionInfo.backtrace, OVR_ARRAY_COUNT(exceptionInfo.backtrace));
 
             // Context
-            exceptionInfo.cpuContext = *pExceptionPointers->ContextRecord;
-            exceptionInfo.exceptionRecord = *pExceptionPointers->ExceptionRecord;
+            exceptionInfo.cpuContext = *pExceptionPointersArg->ContextRecord;
+            exceptionInfo.exceptionRecord = *pExceptionPointersArg->ExceptionRecord;
             exceptionInfo.pExceptionInstructionAddress  = exceptionInfo.exceptionRecord.ExceptionAddress;
             if((exceptionInfo.exceptionRecord.ExceptionCode == EXCEPTION_ACCESS_VIOLATION) || (exceptionInfo.exceptionRecord.ExceptionCode == EXCEPTION_IN_PAGE_ERROR))
                 exceptionInfo.pExceptionMemoryAddress = (void*)exceptionInfo.exceptionRecord.ExceptionInformation[1]; // ExceptionInformation[0] indicates if it was a read (0), write (1), or data execution attempt (8).
             else
-                exceptionInfo.pExceptionMemoryAddress = pExceptionPointers->ExceptionRecord->ExceptionAddress;
+                exceptionInfo.pExceptionMemoryAddress = pExceptionPointersArg->ExceptionRecord->ExceptionAddress;
 
             WriteExceptionDescription();
 
-            if (pExceptionPointers->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW){
+            if (pExceptionPointersArg->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW){
                 unsigned int IdValue;
 
                 void* ThreadHandle = (HANDLE)_beginthreadex(0, (unsigned)128 * 1024,

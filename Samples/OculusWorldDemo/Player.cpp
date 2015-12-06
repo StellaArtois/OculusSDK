@@ -21,7 +21,7 @@ limitations under the License.
 *************************************************************************************/
 
 #include "Player.h"
-#include <Kernel/OVR_Alg.h>
+#include "Kernel/OVR_Alg.h"
 
 
 Player::Player() :

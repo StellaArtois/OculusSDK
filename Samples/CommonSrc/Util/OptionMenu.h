@@ -30,9 +30,9 @@ limitations under the License.
 #include "../Render/Render_Device.h"
 #include "../Platform/Gamepad.h"
 
-#include <Kernel/OVR_SysFile.h>
-#include <Kernel/OVR_Log.h>
-#include <Kernel/OVR_Timer.h>
+#include "Kernel/OVR_SysFile.h"
+#include "Kernel/OVR_Log.h"
+#include "Kernel/OVR_Timer.h"
 
 
 using namespace OVR;

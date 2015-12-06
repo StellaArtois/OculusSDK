@@ -73,9 +73,6 @@
     <ClInclude Include="..\..\..\Src\Kernel\OVR_Types.h" />
     <ClInclude Include="..\..\..\Src\Kernel\OVR_UTF8Util.h" />
     <ClInclude Include="..\..\..\Src\Kernel\OVR_Win32_IncludeWindows.h" />
-    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameEventData.h" />
-    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameListener.h" />
-    <ClInclude Include="..\..\..\Src\Tracing\EtwFrameUtils.h" />
     <ClInclude Include="..\..\..\Src\Tracing\LibOVREvents.h" />
     <ClInclude Include="..\..\..\Src\Tracing\Tracing.h" />
     <ClInclude Include="..\..\..\Src\Util\Util_D3D11_Blitter.h" />
@@ -114,9 +111,6 @@
     <ClCompile Include="..\..\..\Src\Kernel\OVR_ThreadsWinAPI.cpp" />
     <ClCompile Include="..\..\..\Src\Kernel\OVR_Timer.cpp" />
     <ClCompile Include="..\..\..\Src\Kernel\OVR_UTF8Util.cpp" />
-    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameEventData.cpp" />
-    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameListener.cpp" />
-    <ClCompile Include="..\..\..\Src\Tracing\EtwFrameUtils.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_D3D11_Blitter.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_Direct3D.cpp" />
     <ClCompile Include="..\..\..\Src\Util\Util_GL_Blitter.cpp" />
@@ -421,7 +415,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -446,7 +440,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -473,7 +467,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -500,7 +494,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalIncludeDirectories>$(OVRSDKROOT)LibOVRKernel/Src/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -522,7 +516,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
@@ -554,7 +548,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
@@ -586,7 +580,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
@@ -619,7 +613,7 @@
       <OmitDefaultLibName>true</OmitDefaultLibName>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/d2Zi+ /we4263 /we4264 /we4265 /we4266 /we4062 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <StringPooling>false</StringPooling>
       <ExceptionHandling>false</ExceptionHandling>

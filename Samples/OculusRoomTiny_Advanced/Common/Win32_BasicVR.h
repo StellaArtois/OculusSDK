@@ -184,8 +184,8 @@ struct VRLayer
             useHmdToEyeViewOffset[1].x = +(*newIPD * 0.5f);
         }
 
-        ovrFrameTiming   ftiming = ovr_GetFrameTiming(HMD, 0);
-        ovrTrackingState trackingState = ovr_GetTrackingState(HMD, ftiming.DisplayMidpointSeconds);
+        double ftiming = ovr_GetPredictedDisplayTime(HMD, 0);
+        ovrTrackingState trackingState = ovr_GetTrackingState(HMD, ftiming, ovrTrue);
 
         ovr_CalcEyePoses(trackingState.HeadPose.ThePose, useHmdToEyeViewOffset, useEyeRenderPose);
 
@@ -324,6 +324,7 @@ struct BasicVR
     {
         Release();
 	    ovr_Shutdown();
+        DIRECTX.CloseWindow();
     }
 
     bool Init(bool retryCreate)
@@ -338,14 +339,6 @@ struct BasicVR
         // Setup Device and Graphics
         if (!DIRECTX.InitDevice(int(scaleWindowW * HmdDesc.Resolution.w), int(scaleWindowH * HmdDesc.Resolution.h), reinterpret_cast<LUID*>(&luid), windowed))
             return retryCreate;
-
-        // Start the sensor which informs of the Rift's pose and motion
-        result = ovr_ConfigureTracking(HMD, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0);
-        if (!OVR_SUCCESS(result))
-        {
-            if (retryCreate) return true;
-            VALIDATE(false, "Failed to configure tracking.");
-        }
 
         // Create a mirror, to see Rift output on a monitor
         mirrorTexture = nullptr;

@@ -32,7 +32,6 @@ limitations under the License.
 
 namespace OVR { namespace Render {
     class RenderDevice;
-    struct DisplayId;
     struct RendererParams;
 }}
 

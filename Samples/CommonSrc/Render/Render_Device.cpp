@@ -499,32 +499,29 @@ namespace OVR { namespace Render {
     // ***** Rendering
 
 
-    RenderDevice::RenderDevice(ovrHmd hmd)
-        : DistortionClearColor(0, 0, 0),
-        TotalTextureMemoryUsage(0),
-        FadeOutBorderFraction(0),
-        Hmd(hmd)
+    RenderDevice::RenderDevice(ovrHmd hmd) :
+        Hmd(hmd),
+        TotalTextureMemoryUsage(0)
     {
         // Ensure these are different, so that the first time it's run, things actually get initialized.
         PostProcessShaderActive = PostProcessShader_Count;
         PostProcessShaderRequested = PostProcessShader_DistortionAndChromAb;
     }
 
+    RenderDevice::~RenderDevice()
+    {
+        Shutdown();
+    }
+
     void RenderDevice::Shutdown()
     {
-        // This runs before the subclass's Shutdown(), where the context, etc, may be deleted.
+        // Do not issue virtual function calls from here. Shutdown is called
+        // from the destructor.
+
         pTextVertexBuffer.Clear();
         pPostProcessShader.Clear();
         pFullScreenVertexBuffer.Clear();
-        pDistortionMeshVertexBuffer[0].Clear();
-        pDistortionMeshVertexBuffer[1].Clear();
-        pDistortionMeshIndexBuffer[0].Clear();
-        pDistortionMeshIndexBuffer[1].Clear();
-        pDistortionComputePinBuffer[0].Clear();
-        pDistortionComputePinBuffer[1].Clear();
         LightingBuffer.Clear();
-
-        DeleteFills();
 
         Hmd = nullptr;
     }
@@ -694,16 +691,16 @@ namespace OVR { namespace Render {
             {
                 chv[j].C = c;
             }
-            float x = xp + ch->x;
-            float y = yp - ch->y;
+            float fx = xp + ch->x;
+            float fy = yp - ch->y;
             float cx = font->twidth * (ch->u2 - ch->u1);
             float cy = font->theight * (ch->v2 - ch->v1);
-            chv[0] = Vertex(Vector3f(x, y, 0), c, ch->u1, ch->v1);
-            chv[1] = Vertex(Vector3f(x + cx, y, 0), c, ch->u2, ch->v1);
-            chv[2] = Vertex(Vector3f(x + cx, cy + y, 0), c, ch->u2, ch->v2);
-            chv[3] = Vertex(Vector3f(x, y, 0), c, ch->u1, ch->v1);
-            chv[4] = Vertex(Vector3f(x + cx, cy + y, 0), c, ch->u2, ch->v2);
-            chv[5] = Vertex(Vector3f(x, y + cy, 0), c, ch->u1, ch->v2);
+            chv[0] = Vertex(Vector3f(fx, fy, 0), c, ch->u1, ch->v1);
+            chv[1] = Vertex(Vector3f(fx + cx, fy, 0), c, ch->u2, ch->v1);
+            chv[2] = Vertex(Vector3f(fx + cx, cy + fy, 0), c, ch->u2, ch->v2);
+            chv[3] = Vertex(Vector3f(fx, fy, 0), c, ch->u1, ch->v1);
+            chv[4] = Vertex(Vector3f(fx + cx, cy + fy, 0), c, ch->u2, ch->v2);
+            chv[5] = Vertex(Vector3f(fx, fy + cy, 0), c, ch->u1, ch->v2);
             ivertex += 6;
 
             xp += ch->advance;
@@ -749,8 +746,6 @@ namespace OVR { namespace Render {
             Render(fill, pTextVertexBuffer, NULL, *matrix, 0, 6, Prim_Triangles);
     }
 
-
-
     void RenderDevice::FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* matrix)
     {
         if(!pTextVertexBuffer)
@@ -784,8 +779,7 @@ namespace OVR { namespace Render {
             Render(fill, pTextVertexBuffer, NULL, *matrix, 0, 6, Prim_Triangles);
         else
             Render(fill, pTextVertexBuffer, NULL, Matrix4f(), 0, 6, Prim_Triangles);
-    }
-
+ }
 
     void RenderDevice::FillTexturedRect(float left, float top, float right, float bottom, float ul, float vt, float ur, float vb, Color c, Ptr<Texture> tex, const Matrix4f* matrix, bool premultAlpha /*= false*/)
     {
@@ -879,8 +873,6 @@ namespace OVR { namespace Render {
         Render(fill, pTextVertexBuffer, NULL, Matrix4f(), 0, NumVerts, Prim_Lines);
     }
 
-
-
     void RenderDevice::RenderImage(float left,
         float top,
         float right,
@@ -903,7 +895,7 @@ namespace OVR { namespace Render {
             Render(*view, m);
         else
             Render(Matrix4f(), m);
-    }
+ }
 
     bool RenderDevice::initPostProcessSupport(PostProcessType pptype)
     {
@@ -1016,13 +1008,10 @@ namespace OVR { namespace Render {
         BeginRendering();
         initPostProcessSupport(pptype);
         SetWorldUniforms(Proj);
-        SetExtraShaders(NULL);
     }
 
     void RenderDevice::FinishScene()
     {
-        SetExtraShaders(0);
-        //SetDefaultRenderTarget();
     }
 
     bool CollisionModel::TestPoint(const Vector3f& p) const

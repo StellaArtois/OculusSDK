@@ -46,9 +46,9 @@ bool VerifyHRESULT(const char* file, int line, HRESULT hr)
 
 String GetWindowsErrorString(HRESULT hr)
 {
-    char errorTextAddr[256] = {};
+    wchar_t errorTextAddr[256] = {};
 
-    DWORD slen = FormatMessageA(
+    DWORD slen = FormatMessageW(
         // use system message tables to retrieve error text
         FORMAT_MESSAGE_FROM_SYSTEM
         // allocate buffer on local heap for error text
@@ -63,7 +63,9 @@ String GetWindowsErrorString(HRESULT hr)
         256, // minimum size for output buffer
         nullptr);   // arguments - see note 
 
-    char* errorText = *(char**)errorTextAddr;
+    char errorText[256];
+
+    OVR::UTF8Util::Strlcpy(errorTextAddr, OVR_ARRAY_COUNT(errorTextAddr), errorText, 256);
 
     char formatStr[512];
     OVR_snprintf(formatStr, sizeof(formatStr), "[Code=%x = %d]", hr, hr);

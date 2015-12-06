@@ -25,44 +25,51 @@ limitations under the License.
 /// a jarring event.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+
+struct QuantizedYaw : BasicVR
+{
+    QuantizedYaw(HINSTANCE hinst) : BasicVR(hinst, L"Quantized Yaw") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput(1, false);
+		    Layer[0]->GetEyePoses();
+
+            // We only allow yaw in certain jumps.
+            // Note we disabled yaw above
+            static float Yaw = 3.141f;
+            if (DIRECTX.Key[VK_LEFT])  Yaw += 0.02f;
+            if (DIRECTX.Key[VK_RIGHT]) Yaw -= 0.02f;
+
+            // Now adjust if too far away
+            static float VisibleYaw = Yaw;
+            const float JUMP_IN_RADIANS = 20/*DEGREES*/ / 57.0f;
+            if (VisibleYaw > (Yaw + 0.5f * JUMP_IN_RADIANS)) VisibleYaw -= JUMP_IN_RADIANS;
+            if (VisibleYaw < (Yaw - 0.5f * JUMP_IN_RADIANS)) VisibleYaw += JUMP_IN_RADIANS;
+
+            // Set into camera
+            MainCam->Rot = XMQuaternionRotationRollPitchYaw(0, VisibleYaw, 0);
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput(1,false);
-        basicVR.Layer[0]->GetEyePoses();
-
-        // We only allow yaw in certain jumps.
-        // Note we disabled yaw above
-        static float Yaw = 3.141f;
-        if (DIRECTX.Key[VK_LEFT])  Yaw+=0.02f;
-        if (DIRECTX.Key[VK_RIGHT]) Yaw-=0.02f;
-
-        // Now adjust if too far away
-        static float VisibleYaw = Yaw;
-        const float JUMP_IN_RADIANS = 20/*DEGREES*//57.0f;
-        if (VisibleYaw>(Yaw+0.5f*JUMP_IN_RADIANS)) VisibleYaw-=JUMP_IN_RADIANS;
-        if (VisibleYaw<(Yaw-0.5f*JUMP_IN_RADIANS)) VisibleYaw+=JUMP_IN_RADIANS;
-
-        // Set into camera
-        basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0,VisibleYaw,0);
- 
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	QuantizedYaw app(hinst);
+    return app.Run();
 }

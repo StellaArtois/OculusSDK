@@ -25,8 +25,8 @@ limitations under the License.
 *************************************************************************************/
 
 #include "Util_Watchdog.h"
-#include <Kernel/OVR_DebugHelp.h>
-#include <Kernel/OVR_Win32_IncludeWindows.h>
+#include "Kernel/OVR_DebugHelp.h"
+#include "Kernel/OVR_Win32_IncludeWindows.h"
 
 #if defined(OVR_OS_LINUX) || defined(OVR_OS_MAC)
     #include <unistd.h>

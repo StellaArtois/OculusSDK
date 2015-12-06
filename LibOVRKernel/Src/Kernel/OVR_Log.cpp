@@ -41,8 +41,18 @@ limitations under the License.
 #include <android/log.h>
 #elif defined(OVR_OS_LINUX) || defined(OVR_OS_MAC) || defined(OVR_OS_UNIX)
 #include <syslog.h>
-#endif
+#include <errno.h>
 
+typedef int errno_t;
+errno_t gmtime_s(struct tm* tm, const time_t* timer)
+{
+    if (nullptr == gmtime_r(timer, tm)) {
+        return errno;
+    }
+
+    return 0;
+}
+#endif
 
 //-----------------------------------------------------------------------------------
 // ***** LogSubject
@@ -113,8 +123,9 @@ uintptr_t OVR_CAPICallbackUserData = 0;
 //-----------------------------------------------------------------------------------
 // ***** Log Implementation
 
-Log::Log(unsigned logMask) :
-    LoggingMask(logMask)
+Log::Log(unsigned logMask, bool defaultLogEnabled) :
+    LoggingMask(logMask),
+    DefaultLogEnabled(defaultLogEnabled)
 {
 #ifdef OVR_OS_WIN32
     hEventSource = ::RegisterEventSourceW(nullptr, OVR_SYSLOG_NAME);
@@ -221,7 +232,7 @@ void Log::LogMessageVargInt(LogMessageType messageType, const char* fmt, va_list
 
 void Log::LogMessageVarg(LogMessageType messageType, const char* fmt, va_list argList)
 {
-    if ((messageType & LoggingMask) == 0)
+    if (!DefaultLogEnabled || ((messageType & LoggingMask) == 0))
         return;
 #ifndef OVR_BUILD_DEBUG
     if (IsDebugMessage(messageType))
@@ -360,7 +371,9 @@ void Log::DefaultLogOutput(const char* formattedText, LogMessageType messageType
 
 #if defined(OVR_OS_WIN32)
 
-    ::OutputDebugStringW(wideBuff);
+    auto endOfDatestamp = wideText.find(L": ", 11);
+    ::OutputDebugStringW(wideBuff + (endOfDatestamp != std::wstring::npos ? (endOfDatestamp + 2) : 0));
+
     fputs(formattedText, stdout);
 
 #elif defined(OVR_OS_MS) // Any other Microsoft OSs

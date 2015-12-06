@@ -40,7 +40,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int)
 	ovr_Initialize(0);
 	ovr_Create(&hmd, &luid);
     hmdDesc = ovr_GetHmdDesc(hmd);
-	ovr_ConfigureTracking(hmd, ovrTrackingCap_Position, 0);
 
 	// Init Window, device and swapchain
 	WNDCLASSEXW wcex = { sizeof(WNDCLASSEX), 0, DefWindowProc, 0, 0, hInstance, 0, 0, 0, 0, L"VR" };
@@ -102,7 +101,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int)
 	{
 		ld.Fov[i] = hmdDesc.DefaultEyeFov[i];
 		ld.Viewport[i].Size = ovr_GetFovTextureSize(hmd, (ovrEyeType)i, ld.Fov[i], 1.0f);
-        D3D11_TEXTURE2D_DESC dsDesc = { ld.Viewport[i].Size.w, ld.Viewport[i].Size.h, 1, 1, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+        D3D11_TEXTURE2D_DESC dsDesc = { static_cast<unsigned>(ld.Viewport[i].Size.w), static_cast<unsigned>(ld.Viewport[i].Size.h), 1, 1, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
 		{ 1, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET };
 		hmdToEyeViewOffset[i] = ovr_GetRenderDesc(hmd, (ovrEyeType)i, ld.Fov[i]).HmdToEyeViewOffset;
 		ovr_CreateSwapTextureSetD3D11(hmd, Device, &dsDesc, 0, &ld.ColorTexture[i]);        
@@ -115,8 +114,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int)
 	{
 		// Calculate Eye Poses from tracking state
 		ovrPosef pose[2];
-		double dispMidSeconds = ovr_GetFrameTiming(hmd, 0).DisplayMidpointSeconds;
-		ovrTrackingState hmdState = ovr_GetTrackingState(hmd, dispMidSeconds);
+		double dispMidSeconds = ovr_GetPredictedDisplayTime(hmd, 0);
+        ovrTrackingState hmdState = ovr_GetTrackingState(hmd, dispMidSeconds, ovrTrue);
 		ovr_CalcEyePoses(hmdState.HeadPose.ThePose, hmdToEyeViewOffset, pose);
 
 		// Render to each eye
@@ -152,6 +151,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int)
 		// Send rendered eye buffers to HMD
 		for (int i = 0; i < 2; i++) ld.RenderPose[i] = pose[i];
 		ovrLayerHeader* layers[1] = { &ld.Header };
+        // Note: this minimal example doesn't handle ovrError_DisplayLost, something most apps will want to do
 		ovr_SubmitFrame(hmd, 0, nullptr, layers, 1);
 	}
 

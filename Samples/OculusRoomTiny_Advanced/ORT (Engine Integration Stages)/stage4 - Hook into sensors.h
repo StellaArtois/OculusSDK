@@ -4,17 +4,14 @@
 // Complete the configurarion of VR, 
 // and hook Rift orientation and position sensors into our cameras.
             
-#define STAGE4_ConfigureVR result = ovr_ConfigureTracking(HMD, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection                  \
-                                                                | ovrTrackingCap_Position, 0);                                               \
-                           VALIDATE(result == ovrSuccess, "Failed to configure tracking.");                                                  \
-                           ovrEyeRenderDesc eyeRenderDesc[2];                                                                                \
+#define STAGE4_ConfigureVR ovrEyeRenderDesc eyeRenderDesc[2];                                                                                \
                            eyeRenderDesc[0] = ovr_GetRenderDesc(HMD, ovrEye_Left, HMDInfo.DefaultEyeFov[0]);                                 \
                            eyeRenderDesc[1] = ovr_GetRenderDesc(HMD, ovrEye_Right, HMDInfo.DefaultEyeFov[1]);                                \
 
 #define STAGE4_GetEyePoses ovrPosef    EyeRenderPose[2];                                                                                     \
                            ovrVector3f HmdToEyeViewOffset[2] = {eyeRenderDesc[0].HmdToEyeViewOffset,eyeRenderDesc[1].HmdToEyeViewOffset};    \
-                           ovrFrameTiming   ftiming = ovr_GetFrameTiming(HMD, 0);                                                            \
-                           ovrTrackingState hmdState = ovr_GetTrackingState(HMD, ftiming.DisplayMidpointSeconds);                            \
+                           double           ftiming = ovr_GetPredictedDisplayTime(HMD, 0);                                                   \
+                           ovrTrackingState hmdState = ovr_GetTrackingState(HMD, ftiming, ovrTrue);                                          \
                            ovr_CalcEyePoses(hmdState.HeadPose.ThePose, HmdToEyeViewOffset, EyeRenderPose);
 
 #define STAGE4_GetMatrices XMVECTOR eyeQuat = XMVectorSet(EyeRenderPose[eye].Orientation.x, EyeRenderPose[eye].Orientation.y,								  \

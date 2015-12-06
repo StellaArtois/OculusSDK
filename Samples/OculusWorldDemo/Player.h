@@ -21,8 +21,8 @@ limitations under the License.
 
 *************************************************************************************/
 
-#ifndef OVR_WorldDemo_Player_h
-#define OVR_WorldDemo_Player_h
+#ifndef OVR_Player_h
+#define OVR_Player_h
 
 #include "OVR_Kernel.h"
 #include "Kernel/OVR_KeyCodes.h"
@@ -97,4 +97,4 @@ public:
     float       ComfortTurnSnap;
 };
 
-#endif
+#endif // OVR_Player_h

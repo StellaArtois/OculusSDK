@@ -27,8 +27,8 @@ limitations under the License.
 /// move and rotate with the player.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"        // Basic VR
 
 struct UsingBasicVR : BasicVR
 {
@@ -75,7 +75,7 @@ struct UsingBasicVR : BasicVR
 
 		    // ...and now the new quad
 		    static ovrLayerQuad myQuad;
-		    myQuad.Header.Type = ovrLayerType_QuadInWorld;
+                    myQuad.Header.Type = ovrLayerType_Quad;
 		    myQuad.Header.Flags = 0;
 		    myQuad.ColorTexture = extraRenderTexture.TextureSet;;
 		    myQuad.Viewport.Pos.x = 0;

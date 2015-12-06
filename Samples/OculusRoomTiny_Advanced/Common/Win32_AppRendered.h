@@ -115,7 +115,7 @@ struct AppRenderVR : BasicVR
 
         MakeNewDistortionMeshes();
 
-        // A model for the latency test colour in the corner
+        // A model for the latency test color in the corner
         pLatencyTestModel = new Model(new Texture(false, Sizei(256, 256),Texture::AUTO_WHITE),0.975f,0.95f,1,1);
 
         }

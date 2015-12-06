@@ -28,7 +28,7 @@ limitations under the License.
 #include "Kernel/OVR_Array.h"
 #include "Util/Util_D3D11_Blitter.h"
 
-#include "../Render/Render_Device.h"
+#include "Render_Device.h"
 
 #include "OVR_CAPI_D3D.h"
 #include "Util/Util_Direct3D.h"
@@ -59,8 +59,6 @@ public:
 
     void InitUniforms(ID3D10Blob* s);
     bool SetUniform(const char* name, int n, const float* v);
-    //virtual bool UseTransposeMatrix() const { return 1; }
-
     void UpdateBuffer(Buffer* b);
 };
 
@@ -254,7 +252,6 @@ public:
     virtual bool SetParams(const RendererParams& newParams) OVR_OVERRIDE;
 
     virtual void Present(bool withVsync) OVR_OVERRIDE;
-    virtual void WaitUntilGpuIdle() OVR_OVERRIDE;
     virtual void Flush() OVR_OVERRIDE;
 
     size_t QueryGPUMemorySize();
@@ -262,10 +259,6 @@ public:
     virtual void Clear(float r = 0, float g = 0, float b = 0, float a = 1,
         float depth = 1,
         bool clearColor = true, bool clearDepth = true) OVR_OVERRIDE;
-    virtual void Rect(float left, float top, float right, float bottom) OVR_OVERRIDE
-    {
-        OVR_UNUSED4(left, top, right, bottom);
-    }
 
     virtual Buffer* CreateBuffer() OVR_OVERRIDE;
     virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr) OVR_OVERRIDE;
@@ -288,17 +281,13 @@ public:
     virtual void SetDepthMode(bool enable, bool write, CompareFunc func = Compare_Less) OVR_OVERRIDE;
     virtual void SetWorldUniforms(const Matrix4f& proj) OVR_OVERRIDE;
     virtual void SetCommonUniformBuffer(int i, Render::Buffer* buffer) OVR_OVERRIDE;
-    virtual void SetExtraShaders(ShaderSet* s) OVR_OVERRIDE
-    {
-        ExtraShaders = s;
-    }
 
     virtual void Blt(Render::Texture* texture) OVR_OVERRIDE;
 
     // Overridden to apply proper blend state.
     virtual void FillRect(float left, float top, float right, float bottom, Color c, const Matrix4f* view = NULL) OVR_OVERRIDE;
-    virtual void FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* view) OVR_OVERRIDE;
     virtual void RenderText(const struct Font* font, const char* str, float x, float y, float size, Color c, const Matrix4f* view = NULL) OVR_OVERRIDE;
+    virtual void FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* view) OVR_OVERRIDE;
     virtual void RenderImage(float left, float top, float right, float bottom, ShaderFill* image, unsigned char alpha = 255, const Matrix4f* view = NULL) OVR_OVERRIDE;
 
     virtual void Render(const Matrix4f& matrix, Model* model) OVR_OVERRIDE;
@@ -313,7 +302,6 @@ public:
 
     bool RecreateSwapChain();
     virtual ID3D10Blob* CompileShader(const char* profile, const char* src, const char* mainName = "main");
-    virtual ShaderBase* CreateStereoShader(PrimitiveType prim, Render::Shader* vs) OVR_OVERRIDE;
 
     ID3D11SamplerState* GetSamplerState(int sm);
 

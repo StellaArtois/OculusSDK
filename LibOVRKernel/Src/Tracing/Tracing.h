@@ -296,6 +296,30 @@ limitations under the License.
           DistortionGpuDuration \
       )
 
+    #define TraceHardwareInfo(data) \
+      EventWriteHardwareInfo( \
+          data.RequestedBits, \
+          data.CollectedBits, \
+          data.ImuTemp, \
+          data.StmTemp, \
+          data.NrfTemp, \
+          data.VBusVoltage, \
+          data.IAD, \
+          data.Proximity, \
+          data.PanelOnTime, \
+          data.UseRolling, \
+          data.HighBrightness, \
+          data.DP, \
+          data.SelfRefresh, \
+          data.Persistence, \
+          data.LightingOffset, \
+          data.PixelSettle, \
+          data.TotalRows, \
+          data.RecordedCameraCount, \
+          data.TrackerSensorDieTemp, \
+          data.TrackerEtronTemp, \
+          data.TrackerCCMTemp)
+
 #else // OVR_ENABLE_ETW_TRACING
 
     // Eventually other platforms could support their form of performance tracing
@@ -310,28 +334,29 @@ limitations under the License.
     #define TraceDistortionPresent(id, frameIndex) ((void)0)
     #define TraceDistortionEnd(id, frameIndex) ((void)0)
     #define TraceCameraFrameReceived(cfd) ((void)0)
-    #define TraceCameraBeginProcessing(cfd) ((void)0)
+    #define TraceCameraBeginProcessing(camIdx, img) ((void)0)
     #define TraceCameraFrameRequest(requestNumber, frameCount, lastFrameNumber) ((void)0)
-    #define TraceCameraEndProcessing(cfd) ((void)0)
-    #define TraceCameraSkippedFrames(requestNumber, frameCount, lastFrameNumber) ((void)0)
+    #define TraceCameraEndProcessing(camIdx, img) ((void)0)
+    #define TraceCameraSkippedFrames(camIdx, skippedFrameCount) ((void)0)
     #define TraceHmdDesc(desc) ((void)0)
-    #define TraceHmdDisplay(extended, dpy) ((void)0)
+    #define TraceHmdDisplay(dpy) ((void)0)
     #define TraceJSONChunk(Name, TotalChunks, ChunkSequence, TotalSize, ChunkSize, ChunkOffset, Chunk) ((void)0)
     #define TraceLogDebug(message) ((void)0)
     #define TraceLogInfo(message) ((void)0)
     #define TraceLogError(message) ((void)0)
     #define TraceTrackingState(ts) ((void)0)
-    #define TraceCameraBlobs(blobs) ((void)0)
+    #define TraceCameraBlobs(camIdx, frame) ((void)0)
     #define TracePoseLatchCPUWrite(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast, StartPosition, EndPosition, StartQuat, EndQuat) ((void)0)
     #define TracePoseLatchGPULatchReadback(Sequence, Layer, MotionSensorTime, PredictedScanlineFirst, PredictedScanlineLast, TimeToScanlineFirst, TimeToScanlineLast) ((void)0)
-    #define TraceVSync(VSyncTime, FrameIndex) ((void)0)
-    #define TracePosePrediction(OriginalPose, PredictedPose, PredictionTimeDeltaSeconds, id) ((void)0)
+    #define TraceVSync(VSyncTime, FrameIndex, TWGpuEndTime) ((void)0)
+    #define TracePosePrediction(OriginalPose, PredictedPose, PredictionTimeDeltaSeconds, CurrentTimeInSeconds, id) ((void)0)
     #define TraceAppCompositorFocus(Pid) ((void)0)
     #define TraceAppConnect(Pid) ((void)0)
     #define TraceAppDisconnect(Pid) ((void)0)
     #define TraceAppNoOp(Pid) ((void)0)
     #define TraceLatencyTiming(LatencyTiming) ((void)0)
     #define TraceEndFrameAppTiming(AppTiming, DistortionGpuDuration) ((void)0)
+    #define TraceHardwareInfo(data) ((void)0)
 
 #endif // OVR_ENABLE_ETW_TRACING
 

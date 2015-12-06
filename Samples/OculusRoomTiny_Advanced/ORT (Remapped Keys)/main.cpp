@@ -24,68 +24,75 @@ limitations under the License.
 /// mapping the left, right and up keys to the left,right and above respectively.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+
+struct RemappedKeys : BasicVR
+{
+    RemappedKeys(HINSTANCE hinst) : BasicVR(hinst, L"Remapped Keys") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+            // Doing a custom update of position, hence zero speed.
+            ActionFromInput(0);
+		    Layer[0]->GetEyePoses();
+
+            // If space is down, then we will deciding out 4-key strafe set,
+            // with the user pressing the down key (presumably with their longest, middle finger)
+            // with the keys north, west and east of that comprising the other strafe keys, up, left
+            // right respectively.
+            static char ahead, altAhead, back, left, right;
+            if (DIRECTX.Key[' '])
+            {
+                if (DIRECTX.Key['W']) { back = 'W'; left = 'Q'; ahead = '2'; altAhead = '3'; right = 'E'; }
+                if (DIRECTX.Key['E']) { back = 'E'; left = 'W'; ahead = '3'; altAhead = '4'; right = 'R'; }
+                if (DIRECTX.Key['R']) { back = 'R'; left = 'E'; ahead = '4'; altAhead = '5'; right = 'T'; }
+                if (DIRECTX.Key['T']) { back = 'T'; left = 'R'; ahead = '5'; altAhead = '6'; right = 'Y'; }
+                if (DIRECTX.Key['Y']) { back = 'Y'; left = 'T'; ahead = '6'; altAhead = '7'; right = 'U'; }
+                if (DIRECTX.Key['U']) { back = 'U'; left = 'Y'; ahead = '7'; altAhead = '8'; right = 'I'; }
+                if (DIRECTX.Key['I']) { back = 'I'; left = 'U'; ahead = '8'; altAhead = '9'; right = 'O'; }
+                if (DIRECTX.Key['O']) { back = 'O'; left = 'I'; ahead = '9'; altAhead = '0'; right = 'P'; }
+
+                if (DIRECTX.Key['S']) { back = 'S'; left = 'A'; ahead = 'W'; altAhead = 'E'; right = 'D'; }
+                if (DIRECTX.Key['D']) { back = 'D'; left = 'S'; ahead = 'E'; altAhead = 'R'; right = 'F'; }
+                if (DIRECTX.Key['F']) { back = 'F'; left = 'D'; ahead = 'R'; altAhead = 'T'; right = 'G'; }
+                if (DIRECTX.Key['G']) { back = 'G'; left = 'F'; ahead = 'R'; altAhead = 'T'; right = 'H'; }
+                if (DIRECTX.Key['H']) { back = 'H'; left = 'G'; ahead = 'Y'; altAhead = 'U'; right = 'J'; }
+                if (DIRECTX.Key['J']) { back = 'J'; left = 'H'; ahead = 'U'; altAhead = 'I'; right = 'K'; }
+                if (DIRECTX.Key['K']) { back = 'K'; left = 'J'; ahead = 'I'; altAhead = 'O'; right = 'L'; }
+
+                if (DIRECTX.Key['X']) { back = 'X'; left = 'Z'; ahead = 'S'; altAhead = 'D'; right = 'C'; }
+                if (DIRECTX.Key['C']) { back = 'C'; left = 'X'; ahead = 'D'; altAhead = 'F'; right = 'V'; }
+                if (DIRECTX.Key['V']) { back = 'V'; left = 'C'; ahead = 'F'; altAhead = 'G'; right = 'B'; }
+                if (DIRECTX.Key['B']) { back = 'B'; left = 'V'; ahead = 'G'; altAhead = 'H'; right = 'N'; }
+                if (DIRECTX.Key['N']) { back = 'N'; left = 'B'; ahead = 'H'; altAhead = 'J'; right = 'M'; }
+            }
+
+            // Lets interrogate the keys for movement
+		    if ((DIRECTX.Key[altAhead])|| (DIRECTX.Key[ahead]))
+			                        MainCam->Pos = XMVectorAdd(MainCam->Pos, XMVector3Rotate(XMVectorSet(0, 0, -0.05f, 0), MainCam->Rot));
+		    if (DIRECTX.Key[back])  MainCam->Pos = XMVectorAdd(MainCam->Pos, XMVector3Rotate(XMVectorSet(0, 0, +0.05f, 0), MainCam->Rot)); 
+		    if (DIRECTX.Key[right]) MainCam->Pos = XMVectorAdd(MainCam->Pos, XMVector3Rotate(XMVectorSet(+0.05f, 0, 0, 0), MainCam->Rot)); 
+		    if (DIRECTX.Key[left])  MainCam->Pos = XMVectorAdd(MainCam->Pos, XMVector3Rotate(XMVectorSet(-0.05f, 0, 0, 0), MainCam->Rot)); 
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput(0); // Doing a custom update of position, hence zero speed.
-        basicVR.Layer[0]->GetEyePoses();
-
-        // If space is down, then we will deciding out 4-key strafe set,
-        // with the user pressing the down key (presumably with their longest, middle finger)
-        // with the keys north, west and east of that comprising the other strafe keys, up, left
-        // right respectively.
-        static char ahead, altAhead, back, left, right;
-        if (DIRECTX.Key[' '])
-        {
-            if (DIRECTX.Key['W']) { back = 'W'; left = 'Q'; ahead = '2'; altAhead = '3'; right = 'E'; }
-            if (DIRECTX.Key['E']) { back = 'E'; left = 'W'; ahead = '3'; altAhead = '4'; right = 'R'; }
-            if (DIRECTX.Key['R']) { back = 'R'; left = 'E'; ahead = '4'; altAhead = '5'; right = 'T'; }
-            if (DIRECTX.Key['T']) { back = 'T'; left = 'R'; ahead = '5'; altAhead = '6'; right = 'Y'; }
-            if (DIRECTX.Key['Y']) { back = 'Y'; left = 'T'; ahead = '6'; altAhead = '7'; right = 'U'; }
-            if (DIRECTX.Key['U']) { back = 'U'; left = 'Y'; ahead = '7'; altAhead = '8'; right = 'I'; }
-            if (DIRECTX.Key['I']) { back = 'I'; left = 'U'; ahead = '8'; altAhead = '9'; right = 'O'; }
-            if (DIRECTX.Key['O']) { back = 'O'; left = 'I'; ahead = '9'; altAhead = '0'; right = 'P'; }
-
-            if (DIRECTX.Key['S']) { back = 'S'; left = 'A'; ahead = 'W'; altAhead = 'E'; right = 'D'; }
-            if (DIRECTX.Key['D']) { back = 'D'; left = 'S'; ahead = 'E'; altAhead = 'R'; right = 'F'; }
-            if (DIRECTX.Key['F']) { back = 'F'; left = 'D'; ahead = 'R'; altAhead = 'T'; right = 'G'; }
-            if (DIRECTX.Key['G']) { back = 'G'; left = 'F'; ahead = 'R'; altAhead = 'T'; right = 'H'; }
-            if (DIRECTX.Key['H']) { back = 'H'; left = 'G'; ahead = 'Y'; altAhead = 'U'; right = 'J'; }
-            if (DIRECTX.Key['J']) { back = 'J'; left = 'H'; ahead = 'U'; altAhead = 'I'; right = 'K'; }
-            if (DIRECTX.Key['K']) { back = 'K'; left = 'J'; ahead = 'I'; altAhead = 'O'; right = 'L'; }
-
-            if (DIRECTX.Key['X']) { back = 'X'; left = 'Z'; ahead = 'S'; altAhead = 'D'; right = 'C'; }
-            if (DIRECTX.Key['C']) { back = 'C'; left = 'X'; ahead = 'D'; altAhead = 'F'; right = 'V'; }
-            if (DIRECTX.Key['V']) { back = 'V'; left = 'C'; ahead = 'F'; altAhead = 'G'; right = 'B'; }
-            if (DIRECTX.Key['B']) { back = 'B'; left = 'V'; ahead = 'G'; altAhead = 'H'; right = 'N'; }
-            if (DIRECTX.Key['N']) { back = 'N'; left = 'B'; ahead = 'H'; altAhead = 'J'; right = 'M'; }
-        }
-
-        // Lets interrogate the keys for movement
-		if ((DIRECTX.Key[altAhead])|| (DIRECTX.Key[ahead]))
-			                    basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(0, 0, -0.05f, 0), basicVR.MainCam.Rot));
-		if (DIRECTX.Key[back])  basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(0, 0, +0.05f, 0), basicVR.MainCam.Rot)); 
-		if (DIRECTX.Key[right]) basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(+0.05f, 0, 0, 0), basicVR.MainCam.Rot)); 
-		if (DIRECTX.Key[left])  basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(XMVectorSet(-0.05f, 0, 0, 0), basicVR.MainCam.Rot)); 
-
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	RemappedKeys app(hinst);
+    return app.Run();
 }

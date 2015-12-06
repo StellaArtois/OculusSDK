@@ -41,8 +41,8 @@ limitations under the License.
 /// Press the '0' key to disable.
 
 
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"        // Basic VR
 
 struct DebugHUD : BasicVR
 {

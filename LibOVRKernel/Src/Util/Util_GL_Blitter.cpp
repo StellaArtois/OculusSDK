@@ -87,7 +87,7 @@ bool Blitter::Blt(GLuint sourceTexId)
     glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
     AssertOnGLError();
     status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
-    OVR_ASSERT(status == GL_FRAMEBUFFER_COMPLETE);
+    OVR_ASSERT_AND_UNUSED(status == GL_FRAMEBUFFER_COMPLETE, status);
 
     // Do the blt
     glBlitFramebuffer(0, sourceHeight, sourceWidth, 0,

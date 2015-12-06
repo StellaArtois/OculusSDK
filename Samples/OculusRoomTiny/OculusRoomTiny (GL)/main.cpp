@@ -24,7 +24,7 @@ limitations under the License.
 /// is not that great!
 
 #include "../../OculusRoomTiny_Advanced/Common/Win32_GLAppUtil.h"
-#include <Kernel/OVR_System.h>
+#include "Kernel/OVR_System.h"
 
 // Include the Oculus SDK
 #include "OVR_CAPI_GL.h"
@@ -53,14 +53,6 @@ static bool MainLoop(bool retryCreate)
     ovrSizei windowSize = { hmdDesc.Resolution.w / 2, hmdDesc.Resolution.h / 2 };
     if (!Platform.InitDevice(windowSize.w, windowSize.h, reinterpret_cast<LUID*>(&luid)))
         goto Done;
-
-	// Start the sensor which informs of the Rift's pose and motion
-    result = ovr_ConfigureTracking(HMD, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0);
-    if (!OVR_SUCCESS(result))
-    {
-        if (retryCreate) goto Done;
-        VALIDATE(OVR_SUCCESS(result), "Failed to configure tracking.");
-    }
 
     // Make eye render buffers
     for (int eye = 0; eye < 2; ++eye)
@@ -128,8 +120,10 @@ static bool MainLoop(bool retryCreate)
                                                     EyeRenderDesc[1].HmdToEyeViewOffset };
         ovrPosef                  EyeRenderPose[2];
 
-        ovrFrameTiming   ftiming = ovr_GetFrameTiming(HMD, 0);
-        ovrTrackingState hmdState = ovr_GetTrackingState(HMD, ftiming.DisplayMidpointSeconds);
+        double           ftiming = ovr_GetPredictedDisplayTime(HMD, 0);
+        // Keeping sensorSampleTime as close to ovr_GetTrackingState as possible - fed into the layer
+        double           sensorSampleTime = ovr_GetTimeInSeconds();
+        ovrTrackingState hmdState = ovr_GetTrackingState(HMD, ftiming, ovrTrue);
         ovr_CalcEyePoses(hmdState.HeadPose.ThePose, ViewOffset, EyeRenderPose);
 
         if (isVisible)
@@ -181,6 +175,7 @@ static bool MainLoop(bool retryCreate)
             ld.Viewport[eye]     = Recti(eyeRenderTexture[eye]->GetSize());
             ld.Fov[eye]          = hmdDesc.DefaultEyeFov[eye];
             ld.RenderPose[eye]   = EyeRenderPose[eye];
+            ld.SensorSampleTime  = sensorSampleTime;
         }
 
         ovrLayerHeader* layers = &ld.Header;

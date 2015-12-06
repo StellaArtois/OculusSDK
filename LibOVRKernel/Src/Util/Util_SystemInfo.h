@@ -61,16 +61,35 @@ bool GetOVRRuntimePathW(wchar_t out[MAX_PATH]);
 // Returns true if a string-type registry key of the given name is present, else sets out to empty and returns false.
 // The output string will always be 0-terminated, but may be empty.
 // If wow64value is true then KEY_WOW64_32KEY is used in the registry lookup.
-bool GetRegistryStringW(const wchar_t* pSubKey, const wchar_t* stringName, wchar_t out[MAX_PATH], bool wow64value = false);
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool GetRegistryStringW(const wchar_t* pSubKey, const wchar_t* stringName, wchar_t out[MAX_PATH], bool wow64value = false, bool currentUser = false);
 
 // Returns true if a DWORD-type registry key of the given name is present, else sets out to 0 and returns false.
 // If wow64value is true then KEY_WOW64_32KEY is used in the registry lookup.
-bool GetRegistryDwordW(const wchar_t* pSubKey, const wchar_t* stringName, DWORD& out, bool wow64value = false);
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool GetRegistryDwordW(const wchar_t* pSubKey, const wchar_t* stringName, DWORD& out, bool wow64value = false, bool currentUser = false);
+
+// Returns true if a BINARY-type registry key of the given name is present, else sets out to 0 and returns false.
+// Size must be set to max size of out buffer on way in. Will be set to size actually read into the buffer on way out.
+// If wow64value is true then KEY_WOW64_32KEY is used in the registry lookup.
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool GetRegistryBinaryW(const wchar_t* pSubKey, const wchar_t* stringName, LPBYTE out, DWORD* size, bool wow64value = false, bool currentUser = false);
 
 // Returns true if a registry key of the given type is present and can be interpreted as a boolean, otherwise
 // returns defaultValue. It's not possible to tell from a single call to this function if the given registry key
 // was present. For Strings, boolean means (atoi(str) != 0). For DWORDs, boolean means (dw != 0).
-bool GetRegistryBoolW(const wchar_t* pSubKey, const wchar_t* stringName, bool defaultValue, bool wow64value = false);
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool GetRegistryBoolW(const wchar_t* pSubKey, const wchar_t* stringName, bool defaultValue, bool wow64value = false, bool currentUser = false);
+
+// Returns true if the value could be successfully written to the registry.
+// If wow64value is true then KEY_WOW64_32KEY is used in the registry write.
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool SetRegistryBinaryW(const wchar_t* pSubKey, const wchar_t* stringName, const LPBYTE value, DWORD size, bool wow64value = false, bool currentUser = false);
+
+// Returns true if the value could be successfully deleted from the registry.
+// If wow64value is true then KEY_WOW64_32KEY is used.
+// If currentUser is true then HKEY_CURRENT_USER root is used instead of HKEY_LOCAL_MACHINE
+bool DeleteRegistryValue(const wchar_t* pSubKey, const wchar_t* stringName, bool wow64value = false, bool currentUser = false);
 
 //Mac + Linux equivelants are not implemented
 String GetFileVersionStringW(wchar_t filePath[MAX_PATH]);

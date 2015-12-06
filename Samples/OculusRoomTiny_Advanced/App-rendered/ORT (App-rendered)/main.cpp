@@ -36,9 +36,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 #if 0 // Disabled because the existing app rendering support is going away in the LibOVR 0.6 SDK.
 
 #define   OVR_D3D_VERSION 11
-#include "..\..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\..\Common\Old\Win32_BasicVR.h"        // Basic VR
-#include "..\..\Common\Win32_AppRendered.h"    // App-rendered
+#include "../../Common/Old/Win32_DirectXAppUtil.h" // DirectX
+#include "../../Common/Old/Win32_BasicVR.h"        // Basic VR
+#include "../../Common/Win32_AppRendered.h"    // App-rendered
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)

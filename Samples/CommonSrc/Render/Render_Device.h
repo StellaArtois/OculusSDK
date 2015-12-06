@@ -379,8 +379,6 @@ public:
     virtual void SetSampleMode(int sm) = 0;
     virtual void Set(int slot, ShaderStage stage = Shader_Fragment) const = 0;
 	
-	//virtual void* GetInternalImplementation() { return NULL; };
-
     virtual ovrTexture Get_ovrTexture() = 0;
     virtual ovrSwapTextureSet* Get_ovrTextureSet() = 0;
 };
@@ -516,7 +514,7 @@ struct HeightmapVertex
 struct LightingParams
 {
     Color4f  Ambient;
-    Color4f  LightPos[8];       // Not actually colours, but we need the extra element of padding.
+    Color4f  LightPos[8];       // Not actually colors, but we need the extra element of padding.
     Color4f  LightColor[8];
     float    LightCount;
     int      Version;
@@ -549,7 +547,7 @@ public:
     PrimitiveType     Type;
     Ptr<class Fill>   Fill;
     bool              Visible;
-	bool			  IsCollisionModel;
+    bool              IsCollisionModel;
 
     // Some renderers will create these if they didn't exist before rendering.
     // Currently they are not updated, so vertex data should not be changed after rendering.
@@ -557,7 +555,7 @@ public:
     Ptr<Buffer>       IndexBuffer;
 
     Model(PrimitiveType t = Prim_Triangles, const char* assetName = nullptr)
-        : Type(t), AssetName(), Fill(NULL), Visible(true), IsCollisionModel(false)
+        : AssetName(), Type(t), Fill(NULL), Visible(true), IsCollisionModel(false)
     {
         AssetName = "Model: ";
         AssetName.AppendString(assetName);
@@ -793,30 +791,13 @@ protected:
     Matrix4f            Proj;
     Ptr<Buffer>         pTextVertexBuffer;
 
-    // For rendering with lens warping
-    PostProcessType     PostProcessingType;
-
     Ptr<ShaderSet>      pPostProcessShader;
     Ptr<ShaderSet>      pPostProcessHeightmapShader;
     Ptr<Buffer>         pFullScreenVertexBuffer;
-    Color               DistortionClearColor;
     size_t		        TotalTextureMemoryUsage;
-    float               FadeOutBorderFraction;
-    
-    int                 DistortionMeshNumTris[2];
-    Ptr<Buffer>         pDistortionMeshVertexBuffer[2];
-    Ptr<Buffer>         pDistortionMeshIndexBuffer[2];
-
-    Ptr<Buffer>         pDistortionComputePinBuffer[2];
-
-    int                 HeightmapMeshNumTris[2];
-    Ptr<Buffer>         pHeightmapMeshVertexBuffer[2];
-    Ptr<Buffer>         pHeightmapMeshIndexBuffer[2];
 
     // For lighting on platforms with uniform buffers
     Ptr<Buffer>         LightingBuffer;
-
-    RenderTarget        HeightmapTimewarpRTs[2];  // one for each eye
 
 public:
     enum CompareFunc
@@ -826,29 +807,25 @@ public:
         Compare_Greater = 2,
         Compare_Count
     };
+
     RenderDevice(ovrHmd hmd);
-    virtual ~RenderDevice() { Shutdown(); }
+    virtual ~RenderDevice();
 
     // This static function is implemented in each derived class
     // to support a specific renderer type.
     //static RenderDevice* CreateDevice(const RendererParams& rp, void* oswnd);
 
-    // Called to clear out texture fills by the app layer before it exits
-    virtual void DeleteFills() {}
-
-    virtual void Init() {}
     virtual void Shutdown();
-    virtual bool SetParams(const RendererParams& rp)
-    {
-        Params = rp;
-        return true;
-    }
+    virtual bool SetParams(const RendererParams& rp) = 0;
+
+    // Called to clear out texture fills by the app layer before it exits
+    virtual void DeleteFills() = 0;
 
     const RendererParams& GetParams() const { return Params; }
 
     // StereoParams apply Viewport, Projection and Distortion simultaneously,
     // doing full configuration for one eye.
-    void        ApplyStereoParams(const Recti& vp, const Matrix4f& projection)
+    void ApplyStereoParams(const Recti& vp, const Matrix4f& projection)
     {
         SetViewport(vp);
         SetProjection(projection);
@@ -860,7 +837,6 @@ public:
     virtual void Clear(float r = 0, float g = 0, float b = 0, float a = 1,
                        float depth = 1,
                        bool clearColor = true, bool clearDepth = true) = 0;
-    virtual void Rect(float left, float top, float right, float bottom) = 0;
 
     inline void Clear(const Color &c, float depth = 1)
     {
@@ -871,47 +847,38 @@ public:
 
     virtual void Present ( bool withVsync ) = 0;
     // Waits for rendering to complete; important for reducing latency.
-    virtual void WaitUntilGpuIdle() { }
     virtual void Flush() = 0;
 
     // Resources
-    virtual Buffer*  CreateBuffer() { return NULL; }
-    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr)
-    {
-        OVR_UNUSED6(format, width, height, data, mipcount, error); return NULL;
-    }
-
-    virtual bool     GetSamplePositions(Render::Texture*, Vector3f* pos) { pos[0] = Vector3f(0); return 1; }
+    virtual Buffer*  CreateBuffer() = 0;
+    virtual Texture* CreateTexture(int format, int width, int height, const void* data, int mipcount = 1, ovrResult* error = nullptr) = 0;
 
     virtual ShaderSet* CreateShaderSet() { return new ShaderSetMatrixTranspose; }
     virtual Shader* LoadBuiltinShader(ShaderStage stage, int shader) = 0;
 
-    // Rendering
-    virtual void Blt(Texture* texture) { OVR_UNUSED(texture); }
+    virtual void Blt(Texture* texture) = 0;
 
     // Begin drawing directly to the currently selected render target, no post-processing.
-    virtual void BeginRendering() {}
+    virtual void BeginRendering() = 0;
     // Begin drawing the primary scene, starting up whatever post-processing may be needed.
-    virtual void BeginScene(PostProcessType pp = PostProcess_None);
+    void BeginScene(PostProcessType pp = PostProcess_None);
 
     // Finish scene.
-    virtual void FinishScene();
+    void FinishScene();
 
-    virtual void ResolveMsaa(Texture* msaaTex, Texture* outputTex)
-    { OVR_UNUSED2(msaaTex, outputTex); };
+    virtual void ResolveMsaa(Texture* msaaTex, Texture* outputTex) = 0;
 
     // Texture must have been created with Texture_RenderTarget. Use NULL for the default render target.
     // NULL depth buffer means use an internal, temporary one.
-    virtual void SetRenderTarget(Texture* color, Texture* depth = NULL, Texture* stencil = NULL)
-    { OVR_UNUSED3(color, depth, stencil); }
+    virtual void SetRenderTarget(Texture* color, Texture* depth = nullptr, Texture* stencil = nullptr) = 0;
     void SetRenderTarget(const RenderTarget& renderTarget)
     {
         SetRenderTarget(renderTarget.pColorTex, renderTarget.pDepthTex);
     }
     // go to back buffer
-    void SetDefaultRenderTarget() { SetRenderTarget(NULL, NULL); }
+    void SetDefaultRenderTarget() { SetRenderTarget(nullptr, nullptr); }
     virtual void SetDepthMode(bool enable, bool write, CompareFunc func = Compare_Less) = 0;
-    virtual void SetProjection(const Matrix4f& proj);
+    void SetProjection(const Matrix4f& proj);
     virtual void SetWorldUniforms(const Matrix4f& proj) = 0;
 
     // The data is not copied, it must remain valid until the end of the frame
@@ -929,14 +896,12 @@ public:
     // The index 0 is reserved for non-buffer uniforms, and so cannot be used with this function.
     virtual void SetCommonUniformBuffer(int i, Buffer* buffer) { OVR_UNUSED2(i, buffer); }
 
-    virtual void SetExtraShaders(ShaderSet* s) { OVR_UNUSED(s); }
-    virtual Matrix4f GetProjection() const { return Proj; }
-
     // This is a View matrix only, it will be combined with the projection matrix from SetProjection
     virtual void Render(const Matrix4f& matrix, Model* model) = 0;
     // offset is in bytes; indices can be null.
     virtual void Render(const Fill* fill, Buffer* vertices, Buffer* indices,
-                        const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles, MeshType meshType = Mesh_Scene) = 0;
+                        const Matrix4f& matrix, int offset, int count,
+                        PrimitiveType prim = Prim_Triangles, MeshType meshType = Mesh_Scene) = 0;
     virtual void RenderWithAlpha(const Fill* fill, Render::Buffer* vertices, Render::Buffer* indices,
                         const Matrix4f& matrix, int offset, int count, PrimitiveType prim = Prim_Triangles) = 0;
 
@@ -947,20 +912,16 @@ public:
     virtual void RenderText(const Font* font, const char* str, float x, float y, float size, Color c, const Matrix4f* view = NULL);
 
     virtual void FillRect(float left, float top, float right, float bottom, Color c, const Matrix4f* view = NULL);
-    virtual void RenderLines ( int NumLines, Color c, float *x, float *y, float *z = NULL );
-    virtual void FillTexturedRect(float left, float top, float right, float bottom, float ul, float vt, float ur, float vb, Color c, Ptr<Texture> tex, const Matrix4f* view, bool premultAlpha = false);
+    void RenderLines ( int NumLines, Color c, float *x, float *y, float *z = nullptr );
+    virtual void FillTexturedRect(
+        float left, float top, float right, float bottom, float ul, float vt, float ur, float vb,
+        Color c, Ptr<Texture> tex, const Matrix4f* view, bool premultAlpha = false);
     virtual void FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* view);
-    virtual void RenderImage(float left, float top, float right, float bottom, ShaderFill* image, unsigned char alpha=255, const Matrix4f* view = NULL);
+    virtual void RenderImage(float left, float top, float right, float bottom, ShaderFill* image, unsigned char alpha=255, const Matrix4f* view = nullptr);
 
     virtual Fill *GetSimpleFill(int flags = Fill::F_Solid) = 0;
     virtual Fill *GetTextureFill(Texture* tex, bool useAlpha = false, bool usePremult = false) = 0;
     Fill *        CreateTextureFill(Texture* tex, bool useAlpha = false, bool usePremult = false);
-
-    // Sets the color that is applied around distortion.
-    void          SetDistortionClearColor(Color clearColor)
-    {
-        DistortionClearColor = clearColor;
-    }
 
     virtual void SetWindowSize(int w, int h)
 	{
@@ -985,7 +946,7 @@ public:
         PostProcessShader_Count
     };
 
-    PostProcessShader GetPostProcessShader()
+    PostProcessShader GetPostProcessShader() const
     {
         return PostProcessShaderActive;
     }
@@ -993,11 +954,6 @@ public:
     void SetPostProcessShader(PostProcessShader newShader)
     {
         PostProcessShaderRequested = newShader;
-    }
-
-    void SetFadeOutBorderFraction ( float newVal )
-    {
-        FadeOutBorderFraction = newVal;
     }
 
     // GPU Profiling
@@ -1009,9 +965,6 @@ protected:
     // Stereo & post-processing
     virtual bool  initPostProcessSupport(PostProcessType pptype);
     
-    virtual Shader* CreateStereoShader(PrimitiveType prim, Shader* vs)
-    { OVR_UNUSED2(prim, vs); return NULL; }
-
 private:
     PostProcessShader   PostProcessShaderRequested;
     PostProcessShader   PostProcessShaderActive;

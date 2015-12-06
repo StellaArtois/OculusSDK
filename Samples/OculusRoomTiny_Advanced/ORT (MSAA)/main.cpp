@@ -21,8 +21,8 @@ limitations under the License.
 /// which can be compared to its absence by holding the '1' key.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
 
 struct MSAA : BasicVR
 {

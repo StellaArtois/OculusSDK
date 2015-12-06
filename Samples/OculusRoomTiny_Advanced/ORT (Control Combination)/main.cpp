@@ -26,64 +26,71 @@ limitations under the License.
 /// Note, you can hold down SPACEBAR to temporarily disable tilt movement.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
-#include "..\Common\Win32_ControlMethods.h"  // Control code
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_ControlMethods.h"  // Control code
+
+struct ControlCombination : BasicVR
+{
+    ControlCombination(HINSTANCE hinst) : BasicVR(hinst, L"Control Combination") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+            // Take out manual yaw rotation (leaving button move for now)
+            ActionFromInput(1, false);
+            ovrTrackingState trackingState = Layer[0]->GetEyePoses();
+
+            // Set various control methods into camera
+		    MainCam->Pos = XMVectorAdd(MainCam->Pos, FindVelocityFromTilt(this, Layer[0], &trackingState));
+
+		    MainCam->Pos = XMVectorSet(XMVectorGetX(MainCam->Pos),
+			                           GetAccelJumpPosY(this, &trackingState),
+			                           XMVectorGetZ(MainCam->Pos), 0);
+
+            MainCam->Rot = GetAutoYawRotation(Layer[0]);
+ 
+            // If tap side of Rift, then fire a bullet
+            bool singleTap = WasItTapped(trackingState.HeadPose.LinearAcceleration);
+
+            static XMVECTOR bulletPos = XMVectorZero();
+            static XMVECTOR bulletVel = XMVectorZero();
+            if (singleTap)
+            {
+                XMVECTOR eye0 = ConvertToXM(Layer[0]->EyeRenderPose[0].Position);
+                XMVECTOR eye1 = ConvertToXM(Layer[0]->EyeRenderPose[1].Position);
+                XMVECTOR midEyePos = XMVectorScale(XMVectorAdd(eye0, eye1), 0.5f);
+
+			    XMVECTOR totalRot = XMQuaternionMultiply(ConvertToXM(Layer[0]->EyeRenderPose[0].Orientation), MainCam->Rot);
+			    XMVECTOR posOfOrigin = XMVectorAdd(MainCam->Pos, XMVector3Rotate(midEyePos, MainCam->Rot));
+
+                XMVECTOR unitDirOfMainCamera = XMVector3Rotate(XMVectorSet(0, 0, -1, 0), totalRot);
+
+                bulletPos = XMVectorAdd(posOfOrigin, XMVectorScale(unitDirOfMainCamera, 2.0f));
+                bulletVel = XMVectorScale(unitDirOfMainCamera, 0.3f);
+            }
+
+            // Move missile on, and set its position
+            bulletPos = XMVectorAdd(bulletPos, bulletVel);
+            XMStoreFloat3(&RoomScene->Models[1]->Pos, bulletPos); 
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        // Take out manual yaw rotation (leaving button move for now)
-        basicVR.ActionFromInput(1,false);
-        ovrTrackingState trackingState = basicVR.Layer[0]->GetEyePoses();
-
-        // Set various control methods into camera
-		basicVR.MainCam.Pos = XMVectorAdd(basicVR.MainCam.Pos, FindVelocityFromTilt(&basicVR, basicVR.Layer[0], &trackingState));
-
-		basicVR.MainCam.Pos = XMVectorSet(XMVectorGetX(basicVR.MainCam.Pos),
-			                              GetAccelJumpPosY(&basicVR, &trackingState),
-			                              XMVectorGetZ(basicVR.MainCam.Pos), 0);
-
-        basicVR.MainCam.Rot = GetAutoYawRotation(basicVR.Layer[0]);
- 
-        // If tap side of Rift, then fire a bullet
-        bool singleTap = WasItTapped(trackingState.HeadPose.LinearAcceleration);
-
-        static XMVECTOR bulletPos = XMVectorZero();
-        static XMVECTOR bulletVel = XMVectorZero();
-        if (singleTap)
-        {
-            XMVECTOR eye0 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Position);
-            XMVECTOR eye1 = ConvertToXM(basicVR.Layer[0]->EyeRenderPose[1].Position);
-            XMVECTOR midEyePos = XMVectorScale(XMVectorAdd(eye0,eye1),0.5f);
-
-			XMVECTOR totalRot = XMQuaternionMultiply(ConvertToXM(basicVR.Layer[0]->EyeRenderPose[0].Orientation), basicVR.MainCam.Rot);
-			XMVECTOR posOfOrigin = XMVectorAdd(basicVR.MainCam.Pos, XMVector3Rotate(midEyePos, basicVR.MainCam.Rot));
-
-            XMVECTOR unitDirOfMainCamera = XMVector3Rotate(XMVectorSet(0,0,-1,0),totalRot);
-
-            bulletPos = XMVectorAdd(posOfOrigin, XMVectorScale(unitDirOfMainCamera,2.0f));
-            bulletVel = XMVectorScale(unitDirOfMainCamera,0.3f);
-        }
-
-        // Move missile on, and set its position
-        bulletPos = XMVectorAdd(bulletPos,bulletVel);
-        XMStoreFloat3(&basicVR.RoomScene.Models[1]->Pos, bulletPos); 
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	ControlCombination app(hinst);
+    return app.Run();
 }

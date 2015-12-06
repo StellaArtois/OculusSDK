@@ -22,8 +22,8 @@ limitations under the License.
 /// utility functions provided in BasicVR.h - these functions we will be
 /// used in subsequent samples.
 
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"        // Basic VR
 
 struct UsingBasicVR : BasicVR
 {

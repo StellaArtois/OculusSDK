@@ -26,6 +26,9 @@ limitations under the License.
 #endif // OVR_OS_WIN32
 #include <string.h>
 
+#ifdef OVR_BUILD_DEBUG
+    #include "Kernel/OVR_String.h"
+#endif // OVR_BUILD_DEBUG
 
 #if defined(_WIN32)
     #pragma comment(lib, "opengl32.lib")

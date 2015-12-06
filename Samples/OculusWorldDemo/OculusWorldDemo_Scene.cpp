@@ -144,12 +144,12 @@ void OculusWorldDemoApp::PopulateScene(const char *fileName)
     fillTextureLoadFlags |= AnisotropicSample ? TextureLoad_Anisotropic : 0;
 
     // 10x10x10 cubes.
-    Ptr<Fill> fillR = *CreateTextureFill(pRender, mainFilePathNoExtension + "_redCube.tga", fillTextureLoadFlags);
-    PopulateCubeFieldScene(&RedCubesScene, fillR.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
+    Ptr<Fill> fillR = *CreateTextureFill(pRender, mainFilePathNoExtension + "_greenCube.tga", fillTextureLoadFlags);
+    PopulateCubeFieldScene(&GreenCubesScene, fillR.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
 
     // 10x10x10 cubes.
-    Ptr<Fill> fillB = *CreateTextureFill(pRender, mainFilePathNoExtension + "_blueCube.tga", fillTextureLoadFlags);
-    PopulateCubeFieldScene(&BlueCubesScene, fillB.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
+    Ptr<Fill> fillB = *CreateTextureFill(pRender, mainFilePathNoExtension + "_redCube.tga", fillTextureLoadFlags);
+    PopulateCubeFieldScene(&RedCubesScene, fillB.GetPtr(), 10, 10, 10, Vector3f(0.0f, 0.0f, 0.0f), 0.4f);
 
 	// Anna: OculusWorldDemo/Assets/Tuscany/Tuscany_OculusCube.tga file needs to be added
     Ptr<Fill> imageFill = *CreateTextureFill(pRender, mainFilePathNoExtension + "_OculusCube.tga", fillTextureLoadFlags);
@@ -164,13 +164,13 @@ void OculusWorldDemoApp::PopulateScene(const char *fileName)
     smallOculusCubeModel->Fill = imageFill;
     SmallOculusCube.World.Add(smallOculusCubeModel);
 
-    Ptr<Model> smallOculusRedCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
-    smallOculusRedCubeModel->Fill = fillR;
-    SmallOculusRedCube.World.Add(smallOculusRedCubeModel);
+    Ptr<Model> smallOculusGreenCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    smallOculusGreenCubeModel->Fill = fillR;
+    SmallOculusGreenCube.World.Add(smallOculusGreenCubeModel);
 
-    Ptr<Model> smallOculusBlueCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
-    smallOculusBlueCubeModel->Fill = fillB;
-    SmallOculusBlueCube.World.Add(smallOculusBlueCubeModel);
+    Ptr<Model> smallOculusRedCubeModel = *Model::CreateBox(Color(255, 255, 255, 255), Vector3f(0.0f, 0.0f, 0.0f), Vector3f(0.004f, 0.004f, 0.004f));
+    smallOculusRedCubeModel->Fill = fillB;
+    SmallOculusRedCube.World.Add(smallOculusRedCubeModel);
 
     int textureLoadFlags = 0;
     textureLoadFlags |= SrgbRequested ? TextureLoad_SrgbAware : 0;
@@ -178,13 +178,13 @@ void OculusWorldDemoApp::PopulateScene(const char *fileName)
     textureLoadFlags |= TextureLoad_MakePremultAlpha;
     textureLoadFlags |= TextureLoad_SwapTextureSet;
 
-    Ptr<File> imageFile = *new SysFile(mainFilePathNoExtension + "_blueCube.tga");
-    if (imageFile->IsValid())
-        TextureBlueCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
-
-    imageFile = *new SysFile(mainFilePathNoExtension + "_redCube.tga");
+    Ptr<File> imageFile = *new SysFile(mainFilePathNoExtension + "_redCube.tga");
     if (imageFile->IsValid())
         TextureRedCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
+
+    imageFile = *new SysFile(mainFilePathNoExtension + "_greenCube.tga");
+    if (imageFile->IsValid())
+        TextureGreenCube = *LoadTextureTgaTopDown(pRender, imageFile, textureLoadFlags, 255);
 
     imageFile = *new SysFile(mainFilePathNoExtension + "_OculusCube.tga");
     if (imageFile->IsValid())
@@ -244,10 +244,10 @@ void OculusWorldDemoApp::ClearScene()
     LoadingScene.Clear();
     SmallGreenCube.Clear();
     SmallOculusCube.Clear();
+    SmallOculusGreenCube.Clear();
     SmallOculusRedCube.Clear();
-    SmallOculusBlueCube.Clear();
+    GreenCubesScene.Clear();
     RedCubesScene.Clear();
-    BlueCubesScene.Clear();
     OculusCubesScene.Clear();
     ControllerScene.Clear();
 }
@@ -264,8 +264,8 @@ void OculusWorldDemoApp::RenderAnimatedBlocks(ovrEyeType eye, double appTime)
     {
     case 0: pBlockScene = &SmallGreenCube; break;
     case 1: pBlockScene = &SmallOculusCube; break;
-    case 2: pBlockScene = &SmallOculusRedCube; break;
-    case 3: pBlockScene = &SmallOculusBlueCube; break;
+    case 2: pBlockScene = &SmallOculusGreenCube; break;
+    case 3: pBlockScene = &SmallOculusRedCube; break;
     default:
         BlocksShowMeshType = 0;
         break;
@@ -399,7 +399,7 @@ void OculusWorldDemoApp::RenderGrid(ovrEyeType eye, Recti renderViewport)
     pRender->SetViewport(renderViewport);
 
     pRender->SetDepthMode(false, false);
-    Color cNormal ( 0, 255, 0 );        // Green is the least-smeared colour from CA.
+    Color cNormal ( 0, 255, 0 );        // Green is the least-smeared color from CA.
     Color cSpacer ( 255, 255, 0 );
     Color cMid ( 0, 128, 255 );
 

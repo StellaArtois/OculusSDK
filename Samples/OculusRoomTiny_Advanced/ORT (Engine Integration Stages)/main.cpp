@@ -32,7 +32,7 @@ limitations under the License.
 /// added at each stage.
 
 // Include DirectX 11 'engine'
-#include "..\Common\Win32_DirectXAppUtil.h" 
+#include "../Common/Win32_DirectXAppUtil.h"
 
 // Include the Oculus SDK
 #define   OVR_D3D_VERSION 11

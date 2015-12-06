@@ -25,68 +25,76 @@ limitations under the License.
 /// timewarp calculation, as seen in other samples.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+
+struct SmoothQuantizedYaw : BasicVR
+{
+    SmoothQuantizedYaw(HINSTANCE hinst) : BasicVR(hinst, L"Smooth Quantized Yaw") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput(1, false);
+		    Layer[0]->GetEyePoses();
+
+            // We're going to override the basic Yaw, note its disabled in the ActionFromInput call above
+            // We only allow a certain duration of turning
+            const int framesAtATime = 37; // About half a second for DK2
+        
+            // ...and we insist that following pause if observed, if holding the key down
+            // this is ignored if you let go of the buttons, allowing, in theory, a faster turn
+            // if you have a slow value below.  In practise, put it quite small.
+            const int framesToRest = 10;
+
+            // And we can vary the rotation speed if you wish
+            const float rotSpeed = 0.02f;
+
+            // Start conditions
+            static int framesCanTurn = framesAtATime;
+            static int framesToWait = 0;
+            static float Yaw = 3.141f;
+
+            if (DIRECTX.Key[VK_LEFT] || DIRECTX.Key[VK_RIGHT])
+            {
+                if (framesCanTurn) 
+                {
+		            if (DIRECTX.Key[VK_LEFT])  MainCam->Rot = XMQuaternionRotationRollPitchYaw(0, Yaw += rotSpeed, 0); 
+		            if (DIRECTX.Key[VK_RIGHT]) MainCam->Rot = XMQuaternionRotationRollPitchYaw(0, Yaw -= rotSpeed, 0); 
+                    if (--framesCanTurn <= 0)
+                        framesToWait = framesToRest;
+                }
+            }
+            else // If let go, then it resets
+            {
+                framesCanTurn = framesAtATime;
+                framesToWait = 0;
+            }
+
+            // If we have to wait, lets diminish them
+            if (framesToRest)
+            {
+                if (--framesToWait == 0)
+                    framesCanTurn = framesAtATime;
+            }
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+			    Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye);
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput(1,false);
-        basicVR.Layer[0]->GetEyePoses();
-
-        // We're going to override the basic Yaw, note its disabled in the ActionFromInput call above
-        // We only allow a certain duration of turning
-        const int framesAtATime = 37; // About half a second for DK2
-        
-        // ...and we insist that following pause if observed, if holding the key down
-        // this is ignored if you let go of the buttons, allowing, in theory, a faster turn
-        // if you have a slow value below.  In practise, put it quite small.
-        const int framesToRest = 10;
-
-        // And we can vary the rotation speed if you wish
-        const float rotSpeed = 0.02f;
-
-        // Start conditions
-        static int framesCanTurn = framesAtATime;
-        static int framesToWait = 0;
-        static float Yaw = 3.141f;
-
-        if (DIRECTX.Key[VK_LEFT] || DIRECTX.Key[VK_RIGHT])
-        {
-            if (framesCanTurn) 
-            {
-				if (DIRECTX.Key[VK_LEFT])  basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0, Yaw += rotSpeed, 0); 
-				if (DIRECTX.Key[VK_RIGHT]) basicVR.MainCam.Rot = XMQuaternionRotationRollPitchYaw(0, Yaw -= rotSpeed, 0); 
-                framesCanTurn--;
-                if (framesCanTurn==0) framesToWait = framesToRest;
-            }
-        }
-        else // If let go, then it resets
-        {
-            framesCanTurn=framesAtATime;
-            framesToWait = 0;
-        }
-        // If we have to wait, lets diminish them
-        if (framesToRest)
-        {
-            framesToWait--;
-            if (framesToWait==0) framesCanTurn = framesAtATime;
-        }
- 
-        for (int eye = 0; eye < 2; eye++)
-        {
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye);
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    return (basicVR.Release(hinst));
+	SmoothQuantizedYaw app(hinst);
+    return app.Run();
 }

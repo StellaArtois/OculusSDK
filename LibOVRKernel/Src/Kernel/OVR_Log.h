@@ -122,7 +122,7 @@ class Log
 #endif
 
 public: 
-    Log(unsigned logMask = LogMask_Debug);
+    Log(unsigned logMask = LogMask_Debug, bool defaultLogEnabled = true);
     virtual ~Log();
 
 	typedef Delegate2<void, const char*, LogMessageType> LogHandler;
@@ -132,6 +132,9 @@ public:
 
     unsigned        GetLoggingMask() const            { return LoggingMask; }
     void            SetLoggingMask(unsigned logMask)  { LoggingMask = logMask; }
+
+    bool            GetDefaultLogEnabled() const                 { return DefaultLogEnabled; }
+    void            SetDefaultLogEnabled(bool defaultLogEnabled) { DefaultLogEnabled = defaultLogEnabled; }
 
     static void     AddLogObserver(CallbackListener<LogHandler>* listener);
 
@@ -188,16 +191,20 @@ public:
     // By default, only Debug logging is enabled, so to avoid SDK generating console
     // messages in user app (those are always disabled in release build,
     // even if the flag is set). This function is useful in System constructor.
-    static Log*     ConfigureDefaultLog(unsigned logMask = LogMask_Debug)
+    static Log*     ConfigureDefaultLog(unsigned logMask = LogMask_Debug, bool defaultLogEnabled = true)
     {
         Log* log = GetDefaultLog();
         log->SetLoggingMask(logMask);
+        log->SetDefaultLogEnabled(defaultLogEnabled);
         return log;
     }
 
 private:
     // Logging mask described by LogMaskConstants.
     unsigned     LoggingMask;
+
+    // If true then LogMessageVarg writes to stdout, else it writes nothing. LogMessageVargInt is unaffected.
+    bool         DefaultLogEnabled;
 };
 
 

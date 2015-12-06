@@ -215,7 +215,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider OVR-SDK-LibOVR Event Count 48
+// Provider OVR-SDK-LibOVR Event Count 49
 //+
 EXTERN_C __declspec(selectany) const GUID LibOVRProvider = {0x553787fc, 0xd3d7, 0x4f5e, {0xac, 0xb2, 0x15, 0x97, 0xc7, 0x20, 0x9b, 0x3c}};
 
@@ -350,6 +350,8 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR LatencyTiming = {0x29, 0x0
 #define LatencyTiming_value 0x29
 EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR EndFrameAppTiming = {0x2a, 0x0, 0x11, 0x4, 0xc, 0x5, 0x4000000000000000};
 #define EndFrameAppTiming_value 0x2a
+EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR HardwareInfo = {0x2b, 0x0, 0x11, 0x4, 0x0, 0x0, 0x4000000000000000};
+#define HardwareInfo_value 0x2b
 
 //
 // Note on Generate Code from Manifest Windows Vista and above
@@ -387,6 +389,8 @@ EXTERN_C __declspec(selectany) REGHANDLE OVR_SDK_LibOVRHandle = (REGHANDLE)0;
 
 #if !defined(McGenEventRegisterUnregister)
 #define McGenEventRegisterUnregister
+#pragma warning(push)
+#pragma warning(disable:6103)
 DECLSPEC_NOINLINE __inline
 ULONG __stdcall
 McGenEventRegister(
@@ -430,6 +434,7 @@ Remarks:
 
     return Error;
 }
+#pragma warning(pop)
 
 
 DECLSPEC_NOINLINE __inline
@@ -1148,6 +1153,20 @@ Remarks:
 #define EventWriteEndFrameAppTiming(FrameIndex, RenderImuTime, ScanoutStartTime, GpuRenderDuration, BeginRenderingTime, EndRenderingTime, QueueAheadSeconds, DistortionGpuDuration)\
         EventEnabledEndFrameAppTiming() ?\
         Template_qggggggg(OVR_SDK_LibOVRHandle, &EndFrameAppTiming, FrameIndex, RenderImuTime, ScanoutStartTime, GpuRenderDuration, BeginRenderingTime, EndRenderingTime, QueueAheadSeconds, DistortionGpuDuration)\
+        : ERROR_SUCCESS\
+
+//
+// Enablement check macro for HardwareInfo
+//
+
+#define EventEnabledHardwareInfo() ((OVR_SDK_LibOVREnableBits[0] & 0x00000001) != 0)
+
+//
+// Event Macro for HardwareInfo
+//
+#define EventWriteHardwareInfo(RequestedBits, CollectedBits, ImuTemp, StmTemp, NrfTemp, VBusVoltage, IAD, Proximity, PanelOnTime, UseRolling, HighBrightness, DP, SelfRefresh, Persistence, LightingOffset, PixelSettle, TotalRows, CameraCount, TrackerSensorDieTemp, TrackerEtronTemp, TrackerCCMTemp)\
+        EventEnabledHardwareInfo() ?\
+        Template_qqhhhhhhqtttthhhhdF2F2F2(OVR_SDK_LibOVRHandle, &HardwareInfo, RequestedBits, CollectedBits, ImuTemp, StmTemp, NrfTemp, VBusVoltage, IAD, Proximity, PanelOnTime, UseRolling, HighBrightness, DP, SelfRefresh, Persistence, LightingOffset, PixelSettle, TotalRows, CameraCount, TrackerSensorDieTemp, TrackerEtronTemp, TrackerCCMTemp)\
         : ERROR_SUCCESS\
 
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
@@ -2169,6 +2188,89 @@ Template_qggggggg(
 }
 #endif
 
+//
+//Template from manifest : HardwareInfoTemplate
+//
+#ifndef Template_qqhhhhhhqtttthhhhdF2F2F2_def
+#define Template_qqhhhhhhqtttthhhhdF2F2F2_def
+ETW_INLINE
+ULONG
+Template_qqhhhhhhqtttthhhhdF2F2F2(
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_ const unsigned int  _Arg0,
+    _In_ const unsigned int  _Arg1,
+    _In_ const unsigned short  _Arg2,
+    _In_ const unsigned short  _Arg3,
+    _In_ const unsigned short  _Arg4,
+    _In_ const unsigned short  _Arg5,
+    _In_ const unsigned short  _Arg6,
+    _In_ const unsigned short  _Arg7,
+    _In_ const unsigned int  _Arg8,
+    _In_ const BOOL  _Arg9,
+    _In_ const BOOL  _Arg10,
+    _In_ const BOOL  _Arg11,
+    _In_ const BOOL  _Arg12,
+    _In_ const unsigned short  _Arg13,
+    _In_ const unsigned short  _Arg14,
+    _In_ const unsigned short  _Arg15,
+    _In_ const unsigned short  _Arg16,
+    _In_ const signed int  _Arg17,
+    _In_reads_(2) const float *_Arg18,
+    _In_reads_(2) const float *_Arg19,
+    _In_reads_(2) const float *_Arg20
+    )
+{
+#define ARGUMENT_COUNT_qqhhhhhhqtttthhhhdF2F2F2 21
+
+    EVENT_DATA_DESCRIPTOR EventData[ARGUMENT_COUNT_qqhhhhhhqtttthhhhdF2F2F2];
+
+    EventDataDescCreate(&EventData[0], &_Arg0, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[1], &_Arg1, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[2], &_Arg2, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[3], &_Arg3, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[4], &_Arg4, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[5], &_Arg5, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[6], &_Arg6, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[7], &_Arg7, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[8], &_Arg8, sizeof(const unsigned int)  );
+
+    EventDataDescCreate(&EventData[9], &_Arg9, sizeof(const BOOL)  );
+
+    EventDataDescCreate(&EventData[10], &_Arg10, sizeof(const BOOL)  );
+
+    EventDataDescCreate(&EventData[11], &_Arg11, sizeof(const BOOL)  );
+
+    EventDataDescCreate(&EventData[12], &_Arg12, sizeof(const BOOL)  );
+
+    EventDataDescCreate(&EventData[13], &_Arg13, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[14], &_Arg14, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[15], &_Arg15, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[16], &_Arg16, sizeof(const unsigned short)  );
+
+    EventDataDescCreate(&EventData[17], &_Arg17, sizeof(const signed int)  );
+
+    EventDataDescCreate(&EventData[18],  _Arg18, sizeof(const float)*2);
+
+    EventDataDescCreate(&EventData[19],  _Arg19, sizeof(const float)*2);
+
+    EventDataDescCreate(&EventData[20],  _Arg20, sizeof(const float)*2);
+
+    return EventWrite(RegHandle, Descriptor, ARGUMENT_COUNT_qqhhhhhhqtttthhhhdF2F2F2, EventData);
+}
+#endif
+
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 
 #if defined(__cplusplus)
@@ -2237,3 +2339,4 @@ Template_qggggggg(
 #define MSG_OVR_SDK_LibOVR_event_40_message  0xB0000028L
 #define MSG_OVR_SDK_LibOVR_event_41_message  0xB0000029L
 #define MSG_OVR_SDK_LibOVR_event_42_message  0xB000002AL
+#define MSG_OVR_SDK_LibOVR_event_43_message  0xB000002BL

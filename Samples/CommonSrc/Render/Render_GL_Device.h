@@ -378,12 +378,10 @@ public:
 
     virtual void SetViewport(const Recti& vp) OVR_OVERRIDE;
         
-    virtual void WaitUntilGpuIdle() OVR_OVERRIDE;
     virtual void Flush() OVR_OVERRIDE;
 
     virtual void Clear(float r = 0, float g = 0, float b = 0, float a = 1, float depth = 1,
                        bool clearColor = true, bool clearDepth = true) OVR_OVERRIDE;
-    virtual void Rect(float left, float top, float right, float bottom)  OVR_OVERRIDE { OVR_UNUSED4(left,top,right,bottom); }
 
     virtual void BeginRendering() OVR_OVERRIDE;
     virtual void SetDepthMode(bool enable, bool write, CompareFunc func = Compare_Less) OVR_OVERRIDE;

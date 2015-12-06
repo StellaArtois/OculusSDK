@@ -17,9 +17,9 @@
  limitations under the License.
  *************************************************************************************/
 
-#include <GL/CAPI_GLE.h>
-#include <Extras/OVR_Math.h>
-#include <Kernel/OVR_Log.h>
+#include "GL/CAPI_GLE.h"
+#include "Extras/OVR_Math.h"
+#include "Kernel/OVR_Log.h"
 #include "OVR_CAPI_GL.h"
 
  using namespace OVR;

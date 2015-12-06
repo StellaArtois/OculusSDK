@@ -28,8 +28,8 @@ limitations under the License.
 /// Hold the '4' key is freeze the 2nd layer
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"        // Basic VR
 
 struct Layers : BasicVR
 {

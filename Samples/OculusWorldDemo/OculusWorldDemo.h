@@ -135,7 +135,8 @@ public:
     // Renders HUD/menu overlays; 2D viewport must be set before call.
     Recti        RenderTextInfoHud(float textHeight);
     Recti        RenderMenu(float textHeight);
-    Recti        RenderTouchStateHud(float cx, float xy, float textHeight);    
+    Recti        RenderControllerStateHud(float cx, float xy, float textHeight,
+                                          const ovrInputState& is, unsigned controllerType);
 
     // Renders full stereo scene for one eye.
     void         RenderEyeView(ovrEyeType eye, Posef playerTorso);
@@ -227,6 +228,7 @@ protected:
     RenderTarget        MsaaRenderTargets[Rendertarget_LAST];
     RenderTarget*       DrawEyeTargets[Rendertarget_LAST]; // the buffers we'll actually render to (could be MSAA)
     static const bool   AllowMsaaTargets[Rendertarget_LAST]; // whether or not we allow the layer to use MSAA
+    static const bool   UseDepth[Rendertarget_LAST]; // whether or not we need depth buffers for this layer
 
     // ***** Oculus HMD Variables
 
@@ -242,9 +244,6 @@ protected:
     Sizei               EyeRenderSize[2];       // Saved render eye sizes; base for dynamic sizing.
     Ptr<Texture>        MirrorTexture;
     ovrTimewarpProjectionDesc PosTimewarpProjectionDesc;
-
-    // Sensor caps applied.
-    unsigned            StartTrackingCaps;
     bool                UsingDebugHmd;
 
     // Frame timing logic.
@@ -278,6 +277,8 @@ protected:
     bool                HavePositionTracker;
     bool                HaveHMDConnected;
     bool                HaveSync;
+    bool                Replaying;
+    bool                Recording;
 
     double              LastSyncTime;
     unsigned int        LastCameraFrame;
@@ -290,16 +291,16 @@ protected:
     Scene               LoadingScene;
     Scene               SmallGreenCube;
     Scene               SmallOculusCube;
+    Scene               SmallOculusGreenCube;
     Scene               SmallOculusRedCube;
-    Scene               SmallOculusBlueCube;
 
     Scene				OculusCubesScene;
 	Scene               ControllerScene;
+    Scene               GreenCubesScene;
     Scene               RedCubesScene;
-    Scene				BlueCubesScene;
 
-    Ptr<Texture>        TextureBlueCube;
     Ptr<Texture>        TextureRedCube;
+    Ptr<Texture>        TextureGreenCube;
     Ptr<Texture>        TextureOculusCube;
 
     Ptr<Texture>        CockpitPanelTexture;
@@ -314,7 +315,7 @@ protected:
 #endif
 
     // Last frame asn sensor data reported by BeginFrame().
-    ovrFrameTiming      HmdFrameTiming;
+    double              HmdFrameTiming;
     unsigned            HmdStatus;
   
     // Overlay notifications time out in
@@ -328,18 +329,24 @@ protected:
     // Render Target - affecting state.
     bool                RendertargetIsSharedByBothEyes;
     bool                DynamicRezScalingEnabled;
-    bool                EnableSensor;
+
+
 
 
 
     // Recorded tracking and input state, for rendering and reporting the state.
     bool                HasInputState;
     ovrInputState       InputState;
+    ovrInputState       GamepadInputState;
     ovrPosef            HandPoses[2];
+    unsigned int        HandStatus[2];
 
     // The size of the rendered HUD in pixels. If size==0, there's no HUD at the moment.
     Recti               HudRenderedSize;
     Recti               MenuRenderedSize;
+
+    // Read from the device, not sent to it.
+    float               InterAxialDistance;
 
     enum MonoscopicMode
     {
@@ -434,7 +441,9 @@ protected:
     bool                Layer2HighQuality;
     bool                Layer3Enabled;
     bool                Layer3HighQuality;
-    float               Layer23Size;
+    bool                Layer4Enabled;
+    bool                Layer4HighQuality;
+    float               Layer234Size;
     bool                LayerDebugEnabled;
     int                 LayerCockpitEnabled;        // A bitfield - one enable bit per layer.
     bool                LayerCockpitHighQuality;
@@ -483,6 +492,7 @@ protected:
         DebugHudStereoPreset_Count,
     }                       DebugHudStereoPresetMode;
     ovrDebugHudStereoMode   DebugHudStereoMode;
+    bool                    DebugHudStereoGuideInfoEnable;
     Vector3f                DebugHudStereoGuidePosition;
     Vector2f                DebugHudStereoGuideSize;
     Vector3f                DebugHudStereoGuideYawPitchRollDeg;
@@ -526,6 +536,7 @@ protected:
         Text_Info,
         Text_Timing,
         Text_TouchState,
+        Text_GamepadState,
         Text_Help1,
         Text_Help2,
         Text_Count
@@ -564,6 +575,9 @@ protected:
     // true if logging tracking data to file
     bool                IsVisionLogging;
 
+    // Will contain the time when the HMD sensor was sampled and passed into the EyeFov layer
+    double              SensorSampleTimestamp;
+
     
     // **** Rendering Layer Setup
 
@@ -573,8 +587,9 @@ protected:
         LayerNum_Layer1 = 1,
         LayerNum_Layer2 = 2,
         LayerNum_Layer3 = 3,
-        LayerNum_CockpitFirst = 4,
-        LayerNum_CockpitLast = 4 + 4,
+        LayerNum_Layer4 = 4,
+        LayerNum_CockpitFirst = 5,
+        LayerNum_CockpitLast = 5 + 4,
         LayerNum_Hud = 20,
         LayerNum_Menu = 21,
         LayerNum_Debug = 25,
@@ -590,6 +605,7 @@ protected:
     ovrLayer_Union      EyeLayer;
 
     ovrLayerQuad        Layer1, Layer2, Layer3;
+    ovrLayerEyeMatrix   Layer4;
     ovrLayerQuad        CockpitLayer[LayerNum_CockpitLast - LayerNum_CockpitFirst + 1];
     ovrLayerQuad        HudLayer;
     ovrLayerQuad        MenuLayer;

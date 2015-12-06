@@ -188,13 +188,15 @@ ThreadTest(GetHmdDesc)
 }
 
 // XXX this crashes
-NoThreadTest(CreateShouldFail)
+ThreadTest(CreateShouldFail)
 {
     ovrHmd hmdNew;
     ovrGraphicsLuid graphicsId;
     ovrResult result = ovr_Create(&hmdNew, &graphicsId);
     // expect failure
-    return OVR_FAILURE(result) ? 0 : 1;
+    if (OVR_FAILURE(result)) return 0;
+    ovr_Destroy(hmdNew);
+    return 1;
 }
 
 ThreadTest(GetEnabledCaps)
@@ -211,17 +213,6 @@ ThreadTest(SetEnabledCaps)
     return 0;
 }
 
-ThreadTest(ConfigureTracking)
-{
-    ovrHmdDesc desc = ovr_GetHmdDesc(state->hmd);
-    if (!OVR_SUCCESS(ovr_ConfigureTracking(state->hmd, desc.AvailableTrackingCaps & state->rand(), 0)))
-    {
-        ShowError();
-        return 1;
-    }
-    return 0;
-}
-
 ThreadTest(RecenterPose)
 {
     ovr_RecenterPose(state->hmd);
@@ -230,7 +221,7 @@ ThreadTest(RecenterPose)
 
 ThreadTest(GetTrackingState)
 {
-    ovrTrackingState st = ovr_GetTrackingState(state->hmd, 0);
+    ovrTrackingState st = ovr_GetTrackingState(state->hmd, 0, ovrTrue);
     return 0;
 }
 
@@ -238,7 +229,7 @@ ThreadTest(GetPredictedTrackingState)
 {
     double time = ovr_GetTimeInSeconds();
     std::uniform_real_distribution<> randdt(-1, 1);
-    ovrTrackingState st = ovr_GetTrackingState(state->hmd, time + randdt(state->rand));
+    ovrTrackingState st = ovr_GetTrackingState(state->hmd, time + randdt(state->rand), ovrTrue);
     return 0;
 }
 
@@ -277,8 +268,8 @@ ThreadTest(GetRenderDesc)
 ThreadTest(GetFrameTiming)
 {
     std::uniform_int_distribution<> randframe(0, 2);
-    ovrFrameTiming timing = ovr_GetFrameTiming(state->hmd, frameIndex + randframe(state->rand));
-    return 0;
+    double t = ovr_GetPredictedDisplayTime(state->hmd, frameIndex + randframe(state->rand));
+    return (t > 0) ? 0 : 1;
 }
 
 ThreadTest(GetTimeInSeconds)
@@ -509,7 +500,7 @@ struct Threading : BasicVR
 
             // ...and now the new quad
             static ovrLayerQuad myQuad;
-            myQuad.Header.Type = ovrLayerType_QuadInWorld;
+            myQuad.Header.Type = ovrLayerType_Quad;
             myQuad.Header.Flags = 0;
             myQuad.ColorTexture = extraRenderTexture.TextureSet;;
             myQuad.Viewport.Pos.x = 0;

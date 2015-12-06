@@ -22,8 +22,8 @@ limitations under the License.
 /// Move and rotate the controller, and also change its colour
 /// by holding the X and Y buttons. 
 
-#include "..\Common\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Win32_BasicVR.h"        // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"        // Basic VR
 
 struct Controllers : BasicVR
 {

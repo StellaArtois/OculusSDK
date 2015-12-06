@@ -42,7 +42,6 @@ namespace OVR { namespace Render { namespace D3D11 {
 
 using namespace D3DUtil;
 
-
 static D3D11_INPUT_ELEMENT_DESC ModelVertexDesc[] =
 {
     { "Position",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, Pos),   D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -974,6 +973,7 @@ RenderDevice::RenderDevice(ovrHmd hmd, const RendererParams& p, HWND window, ovr
 
 RenderDevice::~RenderDevice()
 {
+    DeleteFills();
 }
 
 void RenderDevice::DeleteFills()
@@ -1488,84 +1488,6 @@ Render::Shader *RenderDevice::LoadBuiltinShader(ShaderStage stage, int shader)
         OVR_ASSERT(false);
         return NULL;
     }
-}
-
-ShaderBase* RenderDevice::CreateStereoShader(PrimitiveType prim, Render::Shader* vs)
-{
-    if (pStereoShaders[prim])
-    {
-        return pStereoShaders[prim];
-    }
-
-    OVR_UNUSED(vs);
-    const char* varyings =
-        "   float4 Position : SV_Position;\n"
-        "   float4 Color    : COLOR0;\n"
-        "   float2 TexCoord : TEXCOORD0;\n"
-        "   float3 Normal   : NORMAL;\n";
-    const char* copyVaryings =
-        "       o.Color = iv[i].Color;\n"
-        "       o.Normal = iv[i].Normal;\n"
-        "       o.TexCoord = iv[i].TexCoord;\n";
-
-    StringBuffer src =
-        "float4x4 Proj[2]     : register(c0);\n"
-        "float4   ViewOffset  : register(c8);\n"
-        "struct Varyings\n"
-        "{\n";
-    src += varyings;
-    src += "};\n"
-        "struct OutVaryings\n"
-        "{\n";
-    src += varyings;
-    src +=
-        "   float3 VPos     : TEXCOORD4;\n"
-        "   uint   Viewport : SV_ViewportArrayIndex;\n"
-        "};\n";
-
-    if (prim == Prim_Lines)
-        src +=
-        "[maxvertexcount(4)]\n"
-        "void main(line Varyings iv[2], inout LineStream<OutVaryings> v)\n";
-    else
-        src +=
-        "[maxvertexcount(6)]\n"
-        "void main(triangle Varyings iv[3], inout TriangleStream<OutVaryings> v)\n";
-
-    char ivsize[6];
-    OVR_sprintf(ivsize, 6, "%d", (prim == Prim_Lines) ? 2 : 3);
-
-    src +=
-        "{\n"
-        "   OutVaryings o;\n"
-        "   for (uint i = 0; i < ";
-    src += ivsize;
-    src += "; i++)\n"
-        "   {\n"
-        "       o.Position = mul(Proj[0], iv[i].Position - ViewOffset);\n"
-        "       o.VPos = iv[i].Position;\n"
-        "       o.Viewport = 0;\n";
-    src += copyVaryings;
-    src +=
-        "       v.Append(o);\n"
-        "   }\n"
-        "   v.RestartStrip();\n"
-        "   for (uint i = 0; i < ";
-    src += ivsize;
-    src += "; i++)\n"
-        "   {\n"
-        "       o.Position = mul(Proj[1], iv[i].Position + ViewOffset);\n"
-        "       o.VPos = iv[i].Position;\n"
-        "       o.Viewport = 1;\n";
-    src += copyVaryings;
-    src +=
-        "       v.Append(o);\n"
-        "   }\n"
-        "   v.RestartStrip();\n"
-        "}\n";
-
-    pStereoShaders[prim] = *new GeomShader(this, CompileShader("gs_4_0", src.ToCStr()));
-    return pStereoShaders[prim];
 }
 
 Fill* RenderDevice::GetSimpleFill(int flags)
@@ -2485,29 +2407,6 @@ void RenderDevice::Flush()
     Context->Flush();
 }
 
-void RenderDevice::WaitUntilGpuIdle()
-{
-#if 0
-    // If enabling this option and using an NVIDIA GPU,
-    // then make sure your "max pre-rendered frames" is set to 1 under the NVIDIA GPU settings.
-
-    // Flush GPU data and don't stall CPU waiting for GPU to complete
-    Context->Flush();
-#else
-    // Flush and Stall CPU while waiting for GPU to complete rendering all of the queued draw calls
-    D3D11_QUERY_DESC queryDesc = { D3D11_QUERY_EVENT, 0 };
-    Ptr<ID3D11Query> query;
-    BOOL             done = FALSE;
-
-    if (Device->CreateQuery(&queryDesc, &query.GetRawRef()) == S_OK)
-    {
-        Context->End(query);
-        do {} while (!done && !FAILED(Context->GetData(query, &done, sizeof(BOOL), 0)));
-    }
-
-#endif
-}
-
 void RenderDevice::FillRect(float left, float top, float right, float bottom, Color c, const Matrix4f* view)
 {
     Context->OMSetBlendState(BlendState, NULL, 0xffffffff);
@@ -2515,17 +2414,17 @@ void RenderDevice::FillRect(float left, float top, float right, float bottom, Co
     Context->OMSetBlendState(NULL, NULL, 0xffffffff);
 }
 
-void RenderDevice::FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* view)
-{
-    Context->OMSetBlendState(BlendState, NULL, 0xffffffff);
-    OVR::Render::RenderDevice::FillGradientRect(left, top, right, bottom, col_top, col_btm, view);
-    Context->OMSetBlendState(NULL, NULL, 0xffffffff);
-}
-
 void RenderDevice::RenderText(const struct Font* font, const char* str, float x, float y, float size, Color c, const Matrix4f* view)
 {
     Context->OMSetBlendState(BlendState, NULL, 0xffffffff);
     OVR::Render::RenderDevice::RenderText(font, str, x, y, size, c, view);
+    Context->OMSetBlendState(NULL, NULL, 0xffffffff);
+}
+
+void RenderDevice::FillGradientRect(float left, float top, float right, float bottom, Color col_top, Color col_btm, const Matrix4f* view)
+{
+    Context->OMSetBlendState(BlendState, NULL, 0xffffffff);
+    OVR::Render::RenderDevice::FillGradientRect(left, top, right, bottom, col_top, col_btm, view);
     Context->OMSetBlendState(NULL, NULL, 0xffffffff);
 }
 

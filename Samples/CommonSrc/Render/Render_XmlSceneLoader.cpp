@@ -22,7 +22,7 @@ limitations under the License.
 ************************************************************************************/
 
 #include "Render_XmlSceneLoader.h"
-#include <Kernel/OVR_Log.h>
+#include "Kernel/OVR_Log.h"
 
 namespace OVR { namespace Render {
 

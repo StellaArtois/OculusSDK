@@ -96,7 +96,9 @@ REM XXX eventually add OVR-Compositor here...
 set LIBOVR_EVENTS_MAN=%SDK_MANIFEST_PATH%\LibOVREvents.man
 if exist "%SCRIPTDIR%LibOVREvents.man" set LIBOVR_EVENTS_MAN=%SCRIPTDIR%LibOVREvents.man
 
-set LIBOVR_PATTERN=LibOVRRT*_0_7.dll
+REM get rid of stale dll's
+del /f /q "%SCRIPTDIR%LibOVRRT*.dll"
+set LIBOVR_PATTERN=LibOVRRT*_0_8.dll
 echo Looking for %LIBOVR_PATTERN% dll's
 REM this nightmare command copies the newest version of %LIBOVR_PATTERN% into the current directory without prompting...
 forfiles /p:"%SystemRoot%\System32" /m:%LIBOVR_PATTERN% /c "cmd /c xcopy /y /f /d @path \"%SCRIPTDIR%.\" >nul" >nul 2>nul

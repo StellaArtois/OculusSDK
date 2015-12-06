@@ -20,8 +20,8 @@ limitations under the License.
 
 ************************************************************************************/
 
-#ifndef OVR_ExceptionHandler_h
-#define OVR_ExceptionHandler_h
+#ifndef OVR_DebugHelp_h
+#define OVR_DebugHelp_h
 
 #include "OVR_Types.h"
 #include "OVR_String.h"
@@ -595,4 +595,4 @@ namespace OVR {
 OVR_RESTORE_MSVC_WARNING()
 
 
-#endif // Header include guard
+#endif // OVR_DebugHelp_h

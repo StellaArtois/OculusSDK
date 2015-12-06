@@ -30,8 +30,11 @@ limitations under the License.
 
 #include "OVR_Types.h"
 #include "OVR_Atomic.h"
+#include "OVR_Std.h"
 #include "stdlib.h"
 #include "stdint.h"
+#include <string.h>
+#include <exception>
 
 
 //-----------------------------------------------------------------------------------
@@ -98,6 +101,38 @@ limitations under the License.
 
 
 namespace OVR {
+
+
+// We subclass std::bad_alloc for the purpose of overriding the 'what' function
+// to provide additional information about the exception, such as context about
+// how or where the exception occurred in our code. We subclass std::bad_alloc
+// instead of creating a new type because it's intended to override std::bad_alloc
+// and be caught by code that uses catch(std::bad_alloc&){}. Also, the std::bad_alloc
+// constructor actually attempts to allocate memory!
+
+struct bad_alloc : public std::bad_alloc
+{
+    bad_alloc(const char* description = "OVR::bad_alloc") OVR_NOEXCEPT;
+
+    bad_alloc(const bad_alloc& oba) OVR_NOEXCEPT
+    {
+        OVR_strlcpy(Description, oba.Description, sizeof(Description));
+    }
+
+    bad_alloc& operator=(const bad_alloc& oba) OVR_NOEXCEPT
+    {
+        OVR_strlcpy(Description, oba.Description, sizeof(Description));
+        return *this;
+    }
+
+    virtual const char* what() const OVR_NOEXCEPT
+    {
+        return Description;
+    }
+
+    char Description[256]; // Fixed size because we cannot allocate memory.
+};
+
 
 
 //-----------------------------------------------------------------------------------

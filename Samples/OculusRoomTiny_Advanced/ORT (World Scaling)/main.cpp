@@ -23,8 +23,8 @@ limitations under the License.
 /// are not 1 unit = 1 metre, which the Oculus SDK would otherwise assume.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
-#include "..\Common\Win32_BasicVR.h"         // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h"  // DirectX
+#include "../Common/Win32_BasicVR.h"         // Basic VR
 
 struct WorldScaling : BasicVR
 {

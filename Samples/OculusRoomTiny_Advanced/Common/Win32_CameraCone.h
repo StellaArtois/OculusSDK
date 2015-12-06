@@ -50,8 +50,8 @@ struct CameraCone
         DWORD color = 0xffffffff;
         float boxRadius = 0.02f;
         ts1.AddSolidColorBox(-boxRadius,-boxRadius,-boxRadius,boxRadius,boxRadius,boxRadius,color);
-        #define AddEdge(i0,i1) ts1.AddQuad(Vertex(v[i0], color, 0, 0), Vertex(v[i1], color, 0, 0), \
-                                           Vertex(v[i1], color, 0, 0), Vertex(v[i1], color, 0, 0));
+        #define AddEdge(i0,i1) ts1.AddQuad(Vertex(v[i0],color,0,0),Vertex(v[i1],color,0,0), \
+                                           Vertex(v[i1],color,0,0),Vertex(v[i1],color,0,0));
         AddEdge(0,1); AddEdge(1,3); AddEdge(3,2); AddEdge(2,0);
         AddEdge(4,5); AddEdge(5,7); AddEdge(7,6); AddEdge(6,4);
         AddEdge(4,0); AddEdge(5,1); AddEdge(7,3); AddEdge(6,2);
@@ -62,10 +62,10 @@ struct CameraCone
         // Model of solid planes
         TriangleSet ts2;
         float gridDensity = 6.0f;
-        #define AddPlane(i0,i1,i2,i3,U,V) ts2.AddQuad(Vertex(v[i0],color, gridDensity * v[i0].U, gridDensity * v[i0].V), \
-                                                      Vertex(v[i1],color, gridDensity * v[i1].U, gridDensity * v[i1].V), \
-                                                      Vertex(v[i2],color, gridDensity * v[i2].U, gridDensity * v[i2].V), \
-                                                      Vertex(v[i3],color, gridDensity * v[i3].U, gridDensity * v[i3].V))
+        #define AddPlane(i0,i1,i2,i3,U,V) ts2.AddQuad(Vertex(v[i0],color,gridDensity*v[i0].U,gridDensity*v[i0].V), \
+                                                      Vertex(v[i1],color,gridDensity*v[i1].U,gridDensity*v[i1].V), \
+                                                      Vertex(v[i2],color,gridDensity*v[i2].U,gridDensity*v[i2].V), \
+                                                      Vertex(v[i3],color,gridDensity*v[i3].U,gridDensity*v[i3].V))
         AddPlane(4,0,6,2,z,y); // Left
         AddPlane(1,5,3,7,z,y); // Right
         AddPlane(4,5,0,1,x,z); // Top

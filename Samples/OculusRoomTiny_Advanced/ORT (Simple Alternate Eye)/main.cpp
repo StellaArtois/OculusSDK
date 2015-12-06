@@ -32,8 +32,8 @@ limitations under the License.
 /// Hold '2' to deactivate folding user-yaw into timewarp
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h"  // DirectX
-#include "..\Common\Win32_BasicVR.h"         // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h"  // DirectX
+#include "../Common/Win32_BasicVR.h"         // Basic VR
 
 struct SimpleAlternateEye : BasicVR
 {

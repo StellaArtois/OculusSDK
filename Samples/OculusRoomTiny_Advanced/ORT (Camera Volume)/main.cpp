@@ -32,9 +32,9 @@ limitations under the License.
 /// alternate interpretations on your brain, e.g with equally spaced lines.
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Win32_DirectXAppUtil.h"   // DirectX
-#include "..\Common\Win32_BasicVR.h"    // Basic VR
-#include "..\Common\Win32_CameraCone.h" // Camera cone 
+#include "../Common/Win32_DirectXAppUtil.h"   // DirectX
+#include "../Common/Win32_BasicVR.h"    // Basic VR
+#include "../Common/Win32_CameraCone.h" // Camera cone
 
 struct CameraVolume : BasicVR
 {

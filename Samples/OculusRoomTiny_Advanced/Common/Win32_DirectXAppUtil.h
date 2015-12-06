@@ -25,6 +25,7 @@ limitations under the License.
 #include "d3dcompiler.h"
 #include "d3d11.h"
 #include "stdio.h"
+#include <new>
 #if _MSC_VER > 1600
 #include "DirectXMath.h"
 using namespace DirectX;
@@ -276,9 +277,10 @@ struct DirectX11
 	void SetAndClearRenderTarget(ID3D11RenderTargetView * rendertarget, struct DepthBuffer * depthbuffer, float R = 0, float G = 0, float B = 0, float A = 0)
 	{
 		float black[] = { R, G, B, A }; // Important that alpha=0, if want pixels to be transparent, for manual layers
-		Context->OMSetRenderTargets(1, &rendertarget, depthbuffer->TexDsv);
+        Context->OMSetRenderTargets(1, &rendertarget, (depthbuffer ? depthbuffer->TexDsv : nullptr));
 		Context->ClearRenderTargetView(rendertarget, black);
-		Context->ClearDepthStencilView(depthbuffer->TexDsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
+        if(depthbuffer)
+            Context->ClearDepthStencilView(depthbuffer->TexDsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1, 0);
 	}
 
 	void SetViewport(float vpX, float vpY, float vpW, float vpH)
@@ -301,8 +303,11 @@ struct DirectX11
 		// This is to provide a means to terminate after a maximum number of frames
 		// to facilitate automated testing
         #ifdef MAX_FRAMES_ACTIVE 
-		    if (--maxFrames <= 0)
-			    Running = false;
+            if (maxFrames > 0)
+            {
+		        if (--maxFrames <= 0)
+			        Running = false;
+            }
         #endif
 		return Running;
 	}
@@ -855,6 +860,16 @@ struct Camera
 		XMVECTOR forward = XMVector3Rotate(XMVectorSet(0, 0, -1, 0), Rot);
 		return(XMMatrixLookAtRH(Pos, XMVectorAdd(Pos, forward), XMVector3Rotate(XMVectorSet(0, 1, 0, 0), Rot)));
 	}
+
+    static void* operator new(std::size_t size)
+    {
+        return _aligned_malloc(sizeof(Camera), __alignof(Camera));
+    }
+
+    static void operator delete(void* p)
+    {
+        _aligned_free(p);
+    }
 };
 
 //----------------------------------------------------
@@ -873,46 +888,3 @@ struct Utility
 #endif // OVR_Win32_DirectXAppUtil_h
 
 
-
-
-
-/*
-
-	//Done with other file loading, lets open file for output.
-	SYSTEMTIME syst;
-	GetSystemTime(&syst);
-	FILE * reportFile;
-	char fileName[100];
-	sprintf_s(fileName,100,"report_Date(%02d_%02d_%04d)_Time(%02d_%02d_%02d).txt",syst.wMonth,syst.wDay,syst.wYear,syst.wHour,syst.wMinute,syst.wSecond);
-	fopen_s(&reportFile, File.Path(fileName), "wt");
-
-	//....and lets also open Parse
-	ParseRecord t;
-	t.OpenRecord(L"ugO4eVcwGiZHMvk7334Me73pY8FOLY67GBgejoMn", L"sfEZ2E3Uf8bbdkEcvovjdQjTdOYaXPxMvISnWDEZ", L"Report");
-
-	//And write the first data into both
-	fprintf(reportFile,"----Comfort testing report file----     (View with Wordwrap off)\n\n");
-	fprintf(reportFile,"Code version    = %s\n",ComfortTestingCodeVersion);
-	fprintf(reportFile,"Headset         = %s\n",basicVR.HMD->ProductName);
-	fprintf(reportFile,"Serial number   = %s\n",basicVR.HMD->SerialNumber);
-	fprintf(reportFile,"Firmware        = %d.%d\n",basicVR.HMD->FirmwareMajor,basicVR.HMD->FirmwareMinor);
-	fprintf(reportFile,"Manufacturer    = %s\n",basicVR.HMD->Manufacturer);
-	fprintf(reportFile,"Resolution      = %d x %d\n",basicVR.HMD->Resolution.w,basicVR.HMD->Resolution.h);
-	fprintf(reportFile,"Date(US format) = %02d/%02d/%04d\n",syst.wMonth,syst.wDay,syst.wYear);
-	fprintf(reportFile,"Time            = %02d:%02d:%02d\n",syst.wHour,syst.wMinute,syst.wSecond);
-	fprintf(reportFile,"User            = %s\n",ovr_GetString(basicVR.HMD, OVR_KEY_USER, "Unknown"));
-	fprintf(reportFile,"Name            = %s\n",ovr_GetString(basicVR.HMD, OVR_KEY_NAME, "Unknown"));
-	fprintf(reportFile,"Gender          = %s\n",ovr_GetString(basicVR.HMD, OVR_KEY_GENDER, "Unknown"));
-	fprintf(reportFile,"Player height   = %f metres\n",ovr_GetFloat(basicVR.HMD, OVR_KEY_PLAYER_HEIGHT, -1));
-	fprintf(reportFile,"Eye height      = %f metres\n",ovr_GetFloat(basicVR.HMD, OVR_KEY_EYE_HEIGHT, -1));
-	fprintf(reportFile,"IPD             = %f metres\n",ovr_GetFloat(basicVR.HMD, OVR_KEY_IPD, -1));
-	fprintf(reportFile,"Eye relief dial = %d\n",ovr_GetInt(basicVR.HMD, OVR_KEY_EYE_RELIEF_DIAL, -1));
-
-	t.AddData("Code version", ComfortTestingCodeVersion);
-//	t.AddData("Headset",      "%s",basicVR.HMD->ProductName);
-//	t.AddData("Serial number","%s",basicVR.HMD->SerialNumber);
-
-	t.SendData();
-
-
-*/

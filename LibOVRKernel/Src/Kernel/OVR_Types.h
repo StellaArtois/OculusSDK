@@ -28,6 +28,7 @@ limitations under the License.
 #ifndef OVR_Types_h
 #define OVR_Types_h
 
+#include <cstddef>
 #include "OVR_Compiler.h"
 
 
@@ -211,6 +212,12 @@ limitations under the License.
 #    pragma warning(disable : 4714)  // _force_inline not inlined
 #    pragma warning(disable : 4786)  // Debug variable name longer than 255 chars
 #  endif // (OVR_CC_MSVC<1300)
+#if (OVR_CC_MSVC>1800)
+#   pragma warning(disable: 4265)    // Class has virtual functions, but destructor is not virtual
+#   pragma warning(disable: 4312)    // Conversion from 'type1' to 'type2' of greater size
+#   pragma warning(disable: 4311)    // Pointer truncation from 'type' to 'type'
+#   pragma warning(disable: 4302)    // Truncation from 'type 1' to 'type 2'
+#endif // OVR_CC_MSVC>1800
 #endif // (OVR_CC_MSVC)
 
 
@@ -264,9 +271,10 @@ namespace OVR {
 
 typedef char            Char;
 
+
 // Pointer-sized integer
 typedef size_t          UPInt;
-typedef ptrdiff_t       SPInt;
+typedef std::ptrdiff_t  SPInt;
 
 
 #if defined(OVR_OS_MS)

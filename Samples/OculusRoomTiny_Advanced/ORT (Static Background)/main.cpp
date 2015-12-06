@@ -27,49 +27,55 @@ limitations under the License.
 /// you yourself are reassuringly stationary.  As I say, much better examples to come!
 
 #define   OVR_D3D_VERSION 11
-#include "..\Common\Old\Win32_DirectXAppUtil.h" // DirectX
-#include "..\Common\Old\Win32_BasicVR.h"  // Basic VR
+#include "../Common/Win32_DirectXAppUtil.h" // DirectX
+#include "../Common/Win32_BasicVR.h"  // Basic VR
+
+struct StaticBackground : BasicVR
+{
+    StaticBackground(HINSTANCE hinst) : BasicVR(hinst, L"Static Background") {}
+
+    void MainLoop()
+    {
+	    Layer[0] = new VRLayer(HMD);
+
+        // We create an extra eye buffer, a means to render it, and a static camera
+        auto width = max(Layer[0]->pEyeRenderTexture[0]->SizeW, Layer[0]->pEyeRenderTexture[1]->SizeW);
+        auto height = max(Layer[0]->pEyeRenderTexture[0]->SizeH, Layer[0]->pEyeRenderTexture[1]->SizeH);
+        auto staticEyeTexture = new Texture(true, width, height);
+        auto renderEyeTexture = new Model(new Material(staticEyeTexture), -1, -1, 1, 1);  
+        Camera StaticMainCam = *MainCam;
+
+	    while (HandleMessages())
+	    {
+		    ActionFromInput();
+		    Layer[0]->GetEyePoses();
+
+		    for (int eye = 0; eye < 2; ++eye)
+		    {
+                // Render the scene from an unmoving, static player - to the new buffer
+                Layer[0]->RenderSceneToEyeBuffer(&StaticMainCam, RoomScene, eye, staticEyeTexture->TexRtv, 0, 1, 1, 1, 1, 1);
+
+                // Render the scene as normal
+                Layer[0]->RenderSceneToEyeBuffer(MainCam, RoomScene, eye, 0, 0, 1, 1, 1, 1, 1); 
+
+                // Render static one over the top - different levels of transparency on buttons '1' and '2'. 
+                float proportionOfStatic = 0.5f;
+                if (DIRECTX.Key['1']) proportionOfStatic = 0;
+                if (DIRECTX.Key['2']) proportionOfStatic = 1;
+                renderEyeTexture->Render(&XMMatrixIdentity(), 1, 1, 1, proportionOfStatic, true); 
+		    }
+
+		    Layer[0]->PrepareLayerHeader();
+		    DistortAndPresent(1);
+	    }
+
+        delete renderEyeTexture;
+    }
+};
 
 //-------------------------------------------------------------------------------------
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR, int)
 {
-    BasicVR basicVR(hinst);
-    basicVR.Layer[0] = new VRLayer(basicVR.HMD);
-
-    // We create an extra eye buffer, a means to render it, and a static camera
-     
-    auto width = max(basicVR.Layer[0]->pEyeRenderTexture[0]->SizeW, basicVR.Layer[0]->pEyeRenderTexture[1]->SizeW);
-    auto height = max(basicVR.Layer[0]->pEyeRenderTexture[0]->SizeH, basicVR.Layer[0]->pEyeRenderTexture[1]->SizeH);
-    auto staticEyeTexture = new Texture(true, width, height);
-    auto renderEyeTexture = new Model(new Material(staticEyeTexture),-1,-1,1,1);  
-    auto StaticMainCam = basicVR.MainCam;
-
-    // Main loop
-    while (basicVR.HandleMessages())
-    {
-        basicVR.ActionFromInput();
-        basicVR.Layer[0]->GetEyePoses();
-
-        for (int eye = 0; eye < 2; eye++)
-        {
-            // Render the scene from an unmoving, static player - to the new buffer
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&StaticMainCam, &basicVR.RoomScene, eye, staticEyeTexture->TexRtv,0,1,1,1,1,1); 
-
-            // Render the scene as normal
-            basicVR.Layer[0]->RenderSceneToEyeBuffer(&basicVR.MainCam, &basicVR.RoomScene, eye, 0,0,1,1,1,1,1); 
-
-            // Render static one over the top - different levels of transparency on buttons '1' and '2'. 
-            float proportionOfStatic = 0.5f;
-            if (DIRECTX.Key['1']) proportionOfStatic = 0;
-            if (DIRECTX.Key['2']) proportionOfStatic = 1;
-            renderEyeTexture->Render(&XMMatrixIdentity(),1,1,1,proportionOfStatic,true); 
-        }
-
-        basicVR.Layer[0]->PrepareLayerHeader();
-        basicVR.DistortAndPresent(1);
-    }
-
-    delete renderEyeTexture;
-
-    return (basicVR.Release(hinst));
+	StaticBackground app(hinst);
+    return app.Run();
 }

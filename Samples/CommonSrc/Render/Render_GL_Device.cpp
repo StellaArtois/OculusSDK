@@ -752,9 +752,10 @@ void RenderDevice::Shutdown()
 {
     // Release any other resources first.
     OVR::Render::RenderDevice::Shutdown();
+
+    DeleteFills();
     
     // This runs before the subclass's Shutdown(), where the context, etc, may be deleted.
-
     glDeleteFramebuffers(1, &CurrentFbo);
     glDeleteFramebuffers(1, &MsaaFbo);
     
@@ -836,12 +837,6 @@ void RenderDevice::SetViewport(const Recti& vp)
 void RenderDevice::Flush()
 {
     glFlush();
-}
-
-void RenderDevice::WaitUntilGpuIdle()
-{
-    glFlush();
-    glFinish();
 }
 
 void RenderDevice::Clear(float r, float g, float b, float a, float depth, bool clearColor /*= true*/, bool clearDepth /*= true*/)
@@ -1349,12 +1344,12 @@ bool ShaderSet::SetUniform4x4f(const char* name, const Matrix4f& m)
 Texture::Texture(ovrHmd hmd, RenderDevice* r, int fmt, int w, int h, int samples)
     : Hmd(hmd)
     , Ren(r)
-    , Format(fmt)
+    , TextureSet(nullptr)
+    , MirrorTexture(nullptr)
     , Width(w)
     , Height(h)
     , Samples(samples)
-    , TextureSet(nullptr)
-    , MirrorTexture(nullptr)
+    , Format(fmt)
     , TexId(0)
 {
 }

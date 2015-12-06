@@ -104,7 +104,7 @@ XMVECTOR FindVelocityFromTilt(BasicVR * pBasicVR, VRLayer * vrLayer, ovrTracking
 	XMVECTOR orientQuat = ConvertToXM(vrLayer->EyeRenderPose[0].Orientation);
 	XMFLOAT3 eulerFromRift = GetEulerAngles(orientQuat);
 
-	XMVECTOR totalHorizRot = XMQuaternionMultiply(pBasicVR->MainCam.Rot,XMQuaternionRotationRollPitchYaw(0,eulerFromRift.y,0));
+	XMVECTOR totalHorizRot = XMQuaternionMultiply(pBasicVR->MainCam->Rot,XMQuaternionRotationRollPitchYaw(0,eulerFromRift.y,0));
     XMVECTOR unitForwardVector = XMVector3Rotate(XMVectorSet(0,0,-1,0),totalHorizRot);
     XMVECTOR unitRightVector   = XMVector3Rotate(XMVectorSet(1,0,0,0),totalHorizRot);
 
